@@ -104,7 +104,7 @@ local function jumpscare(monster: string)
 			Position = UDim2.fromScale(0.5, 0.45),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Text = scare.face,
-			TextSize = 300,
+			TextScaled = true,
 			ZIndex = 31,
 		})
 		local faceScale = UIKit.create("UIScale", { Scale = 0.2 })

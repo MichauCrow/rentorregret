@@ -48,7 +48,7 @@ Lekki horror dla dzieci w kooperacji 1–4 graczy. Straszy, ale nie przeraża: n
 
 ## Fazy
 - [x] **Faza 0 — fundament**: gałąź `polnoc`, usunięcie starej rozgrywki, nowy zapis danych (osobny magazyn `RoR_Polnoc_v1`).
-- [ ] **Faza 1 — pierwsza grywalna wersja**: hol, kamienica (parter + 2 piętra), rundy 1–4 graczy, monety i czynsz, klucz i zamknięte mieszkanie, szafy, duszki, Cichy Sąsiad, Mruczek, Klucznik o północy, sklep z 4 ulepszeniami, ustawienia (jumpscare'y, dźwięk), obsługa telefonu.
+- [x] **Faza 1 — pierwsza grywalna wersja** (kod gotowy i przetestowany w symulacji Lune; czeka na test w Studio): hol, kamienica (parter + 2 piętra), rundy 1–4 graczy, monety i czynsz, klucz i zamknięte mieszkanie, szafy, duszki, Cichy Sąsiad, Mruczek, Klucznik o północy, sklep z 4 ulepszeniami, ustawienia (jumpscare'y, dźwięk), obsługa telefonu.
 - [ ] **Faza 2 — klimat**: dźwięki (kroki, mruczenie, zegar), migające lampy, animacje potworów, samouczek w pierwszej rundzie, wersja angielska.
 - [ ] **Faza 3 — więcej kamienicy**: piwnica z **Pralką**, **Skarpetnik** (kradnie monety), bezpiecznik i proste zagadki, losowy układ mieszkań.
 - [ ] **Faza 4 — powody do powrotu**: zwierzaki-pomocnicy (pies węszy monety, sowa widzi w ciemności), nagroda dzienna, kody, ranking najszybszych rund, kosmetyki.
