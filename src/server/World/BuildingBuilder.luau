@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local LandlordBuilder = require(script.Parent.LandlordBuilder)
 local Parts = require(script.Parent.Parts)
+local Scenery = require(script.Parent.Scenery)
 
 local BuildingBuilder = {}
 
@@ -252,9 +253,143 @@ local function roomDecor(building, room, rng: Random)
 	end
 end
 
+-- Położenie (u) lica ściany bocznej pokoju: zależy od tego, czy to ściana zewnętrzna, działowa czy klatki
+local function wallU(room, high: boolean): number
+	if room.mirror then
+		return if high then (if room.x0 == 0 then 26 else 25.5) else 0.5
+	end
+	return if high then 25.5 else (if room.x0 == 0 then 0 else 0.5)
+end
+
+-- Aneks kuchenny przy ścianie korytarza: blat ze zlewem i kuchenką, szafki wiszące, czajnik
+local function kitchen(building, room)
+	local d = building.decor
+	local base = facing(roomPoint(building, room, 4.9, 1.4, 1.5), -inward(room))
+	Parts.Block(building.geometry, "Counter", Vector3.new(7.4, 3, 1.6), base, COLORS.wood, M.Wood)
+	Parts.Deco(d, "CounterTop", Vector3.new(7.7, 0.2, 1.8), base * CFrame.new(0, 1.6, -0.05), Color3.fromRGB(200, 196, 188), M.Marble)
+	for i = -1, 1 do
+		Parts.Deco(d, "CupboardDoor", Vector3.new(2.1, 2.4, 0.08), base * CFrame.new(i * 2.4, -0.1, -0.82), COLORS.darkWood, M.Wood)
+		Parts.Deco(d, "CupboardKnob", Vector3.new(0.2, 0.2, 0.2), base * CFrame.new(i * 2.4 + 0.7, 0.4, -0.9), COLORS.metal, M.Metal, Enum.PartType.Ball)
+	end
+	Parts.Deco(d, "Sink", Vector3.new(1.8, 0.12, 1.1), base * CFrame.new(-2.2, 1.68, -0.05), Color3.fromRGB(120, 126, 132), M.Metal)
+	Parts.Deco(d, "Tap", Vector3.new(0.14, 0.9, 0.14), base * CFrame.new(-2.2, 2.1, 0.55), COLORS.metal, M.Metal)
+	Parts.Deco(d, "Tap", Vector3.new(0.14, 0.14, 0.6), base * CFrame.new(-2.2, 2.5, 0.3), COLORS.metal, M.Metal)
+	Parts.Deco(d, "Stove", Vector3.new(2.2, 0.14, 1.4), base * CFrame.new(2, 1.7, -0.05), COLORS.black, M.Metal)
+	for _, x in { -0.5, 0.5 } do
+		for _, z in { -0.32, 0.32 } do
+			Parts.Deco(d, "Burner", Vector3.new(0.06, 0.5, 0.5), base * CFrame.new(2 + x, 1.79, -0.05 + z) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(70, 70, 76), M.Metal, Enum.PartType.Cylinder)
+		end
+	end
+	Parts.Deco(d, "Oven", Vector3.new(2, 1.7, 0.1), base * CFrame.new(2, -0.2, -0.84), COLORS.black, M.Glass)
+	Parts.Blob(d, "Kettle", Vector3.new(0.8, 0.8, 0.8), base * CFrame.new(1.5, 2.2, 0.27), Color3.fromRGB(190, 60, 60), M.Metal)
+	Parts.Deco(d, "WallCupboard", Vector3.new(7.4, 2.4, 1), base * CFrame.new(0, 5.6, 0.3), COLORS.wood, M.Wood)
+	for i = -1, 1 do
+		Parts.Deco(d, "CupboardDoor", Vector3.new(2.1, 2, 0.08), base * CFrame.new(i * 2.4, 5.6, -0.22), COLORS.darkWood, M.Wood)
+	end
+end
+
+-- Fotel z lampą stojącą w kącie pokoju
+local function armchair(building, room, rng: Random)
+	local d = building.decor
+	local color = pick(rng, COLORS.fabric)
+	local direction = (along(room, -1) + inward(room)).Unit
+	local base = facing(roomPoint(building, room, 23.2, 12.9, 0.8), direction)
+	Parts.Block(building.geometry, "Armchair", Vector3.new(2.6, 1.6, 2.6), base, color, M.Fabric)
+	Parts.Deco(d, "ArmchairBack", Vector3.new(2.6, 2.8, 0.7), base * CFrame.new(0, 1.8, 1.1), color, M.Fabric)
+	for _, x in { -1.15, 1.15 } do
+		Parts.Deco(d, "ArmchairArm", Vector3.new(0.5, 1, 2.3), base * CFrame.new(x, 1.1, 0), color:Lerp(Color3.new(0, 0, 0), 0.15), M.Fabric)
+	end
+	Parts.Blob(d, "Cushion", Vector3.new(1.3, 1, 0.6), base * CFrame.new(0.2, 1.3, 0.55), pick(rng, COLORS.picture), M.Fabric)
+	local lamp = roomPoint(building, room, 24.4, 11.3, 0)
+	Parts.Deco(d, "FloorLampFoot", Vector3.new(0.2, 1.2, 1.2), CFrame.new(lamp + Vector3.new(0, 0.1, 0)) * CFrame.Angles(0, 0, math.rad(90)), COLORS.black, M.Metal, Enum.PartType.Cylinder)
+	Parts.Deco(d, "FloorLampPole", Vector3.new(0.18, 6, 0.18), CFrame.new(lamp + Vector3.new(0, 3, 0)), COLORS.black, M.Metal)
+	Parts.Deco(d, "FloorLampShade", Vector3.new(1.3, 1.6, 1.6), CFrame.new(lamp + Vector3.new(0, 6.3, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(226, 204, 160), M.Fabric, Enum.PartType.Cylinder)
+end
+
+-- Regał z książkami przy ścianie bocznej
+local function bookshelf(building, room, rng: Random)
+	local d = building.decor
+	local base = facing(roomPoint(building, room, wallU(room, false) + 0.65, 10.6, 3.25), along(room, 1))
+	Parts.Block(building.geometry, "Bookshelf", Vector3.new(4, 6.5, 1.2), base, COLORS.darkWood, M.Wood)
+	for row = 0, 2 do
+		Parts.Deco(d, "ShelfBoard", Vector3.new(3.8, 0.14, 1.26), base * CFrame.new(0, -1.9 + row * 1.9, -0.02), COLORS.wood, M.Wood)
+		local x = -1.7
+		while x < 1.4 do
+			local width = 0.25 + rng:NextNumber() * 0.35
+			local height = 1 + rng:NextNumber() * 0.5
+			Parts.Deco(d, "Book", Vector3.new(width, height, 0.8), base * CFrame.new(x + width / 2, -1.83 + row * 1.9 + height / 2, -0.28), pick(rng, COLORS.rug):Lerp(pick(rng, COLORS.picture), rng:NextNumber()), M.Fabric)
+			x += width + 0.04 + (if rng:NextNumber() < 0.15 then 0.5 else 0)
+		end
+	end
+end
+
+-- Drobiazgi: miś na łóżku, kapcie, nakrycie na stole, wieszak z płaszczem, lustro, pajęczyna
+local function roomDetails(building, room, rng: Random)
+	local d = building.decor
+	if rng:NextNumber() < 0.45 then
+		local teddy = facing(roomPoint(building, room, 5.2, 12.6, 2.2), inward(room))
+		local fur = Color3.fromRGB(150, 104, 70)
+		Parts.Blob(d, "Teddy", Vector3.new(0.9, 1, 0.8), teddy * CFrame.new(0, 0.3, 0), fur, M.Fabric)
+		Parts.Blob(d, "TeddyHead", Vector3.new(0.75, 0.7, 0.7), teddy * CFrame.new(0, 1.05, -0.05), fur, M.Fabric)
+		for _, x in { -0.3, 0.3 } do
+			Parts.Blob(d, "TeddyEar", Vector3.new(0.3, 0.3, 0.2), teddy * CFrame.new(x, 1.4, 0), fur, M.Fabric)
+			Parts.Blob(d, "TeddyLeg", Vector3.new(0.4, 0.4, 0.7), teddy * CFrame.new(x, -0.05, -0.5), fur, M.Fabric)
+		end
+		Parts.Blob(d, "TeddyNose", Vector3.new(0.3, 0.25, 0.2), teddy * CFrame.new(0, 0.98, -0.38), Color3.fromRGB(230, 200, 160), M.Fabric)
+	end
+	if rng:NextNumber() < 0.55 then
+		for _, offset in { 0, 0.7 } do
+			Parts.Blob(d, "Slipper", Vector3.new(0.5, 0.35, 1), facing(roomPoint(building, room, 9.3 + offset, 9.4, 0.2), inward(room)), Color3.fromRGB(200, 90, 110), M.Fabric)
+		end
+	end
+	if rng:NextNumber() < 0.8 then
+		local top = facing(roomPoint(building, room, 16, 7, 3.05), inward(room))
+		Parts.Deco(d, "Plate", Vector3.new(0.08, 1.1, 1.1), top * CFrame.new(-1, 0.02, 0.3) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(240, 240, 235), M.SmoothPlastic, Enum.PartType.Cylinder)
+		Parts.Deco(d, "Cup", Vector3.new(0.5, 0.45, 0.45), top * CFrame.new(-0.1, 0.25, 0.6) * CFrame.Angles(0, 0, math.rad(90)), pick(rng, COLORS.picture), M.SmoothPlastic, Enum.PartType.Cylinder)
+		Parts.Deco(d, "Vase", Vector3.new(0.9, 0.5, 0.5), top * CFrame.new(1.1, 0.45, -0.4) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(90, 130, 170), M.Glass, Enum.PartType.Cylinder)
+		Parts.Blob(d, "VaseFlower", Vector3.new(0.8, 0.7, 0.8), top * CFrame.new(1.1, 1.2, -0.4), pick(rng, Scenery.COLORS.flowers), M.Grass)
+	end
+	if rng:NextNumber() < 0.6 then
+		local hooks = facing(roomPoint(building, room, 17.6, 0.58, 6.6), -inward(room))
+		Parts.Deco(d, "CoatRack", Vector3.new(2.6, 0.3, 0.16), hooks, COLORS.darkWood, M.Wood)
+		Parts.Blob(d, "Coat", Vector3.new(1.1, 2.6, 0.5), hooks * CFrame.new(-0.6, -1.4, -0.25), pick(rng, COLORS.fabric), M.Fabric)
+		Parts.Blob(d, "Hat", Vector3.new(0.9, 0.5, 0.7), hooks * CFrame.new(0.7, 0.1, -0.35), COLORS.black, M.Fabric)
+	end
+	if rng:NextNumber() < 0.5 then
+		local mirror = facing(roomPoint(building, room, wallU(room, true) - 0.1, 3, 6), along(room, -1))
+		Parts.Deco(d, "MirrorFrame", Vector3.new(2.2, 3.2, 0.16), mirror, COLORS.gold, M.Metal)
+		local glass = Parts.Deco(d, "Mirror", Vector3.new(1.8, 2.8, 0.18), mirror * CFrame.new(0, 0, -0.02), Color3.fromRGB(170, 190, 200), M.Glass)
+		glass.Reflectance = 0.4
+	end
+	if rng:NextNumber() < 0.5 then
+		-- Pajęczyna pod sufitem w rogu przy ścianie zewnętrznej
+		local corner = roomPoint(building, room, wallU(room, false) + 0.1, 15.9, WALL_HEIGHT - 0.2)
+		local alongWall = along(room, 1) * 2.6
+		local out = inward(room) * 2.6
+		local down = Vector3.new(0, -2.6, 0)
+		local white = Color3.fromRGB(230, 230, 235)
+		for _, pair in { { alongWall, out }, { out, down }, { alongWall, down }, { alongWall * 0.5, (out + down) * 0.5 }, { out * 0.5, (alongWall + down) * 0.5 } } do
+			local a, b = corner + pair[1], corner + pair[2]
+			local web = Parts.Deco(d, "Cobweb", Vector3.new(0.05, 0.05, (b - a).Magnitude), CFrame.lookAt((a + b) / 2, b), white)
+			web.Transparency = 0.35
+		end
+		Parts.Blob(d, "Spider", Vector3.new(0.35, 0.3, 0.35), CFrame.new(corner + (alongWall + out + down) * 0.3), COLORS.black)
+	end
+end
+
 local function furnishApartment(building, room, rng: Random)
 	window(building, room)
 	roomDecor(building, room, rng)
+	if rng:NextNumber() < 0.9 then
+		kitchen(building, room)
+	end
+	if rng:NextNumber() < 0.6 then
+		armchair(building, room, rng)
+	end
+	if rng:NextNumber() < 0.6 then
+		bookshelf(building, room, rng)
+	end
+	roomDetails(building, room, rng)
 	wardrobe(building, room, rng)
 	for _, builder in SEARCHABLE do
 		if rng:NextNumber() < 0.85 then
@@ -370,6 +505,21 @@ local function buildStairs(building, f: number)
 		Parts.Deco(building.decor, "Step", Vector3.new(5.5, 0.7, run), CFrame.new(o + Vector3.new(55.25, y0 + k * rise - 0.35, 16 - (k - 0.5) * run)), color, M.WoodPlanks)
 		Parts.Deco(building.decor, "Step", Vector3.new(5.5, 0.7, run), CFrame.new(o + Vector3.new(61, y0 + 7 + k * rise - 0.35, 4 + (k - 0.5) * run)), color, M.WoodPlanks)
 	end
+	-- Okno nad podestem: zimne światło księżyca na schodach
+	local windowCenter = o + Vector3.new(58.25, y0 + 12, 0.12)
+	local windowFrame = facing(windowCenter, Vector3.new(0, 0, 1))
+	Parts.Deco(building.decor, "StairWindowFrame", Vector3.new(4.4, 5, 0.2), windowFrame, COLORS.darkWood, M.Wood)
+	local pane = Parts.Deco(building.decor, "StairWindow", Vector3.new(3.8, 4.4, 0.24), windowFrame, COLORS.window, M.Glass)
+	pane.Transparency = 0.15
+	Parts.Deco(building.decor, "StairWindowBar", Vector3.new(0.2, 4.4, 0.3), windowFrame, COLORS.darkWood, M.Wood)
+	Parts.Deco(building.decor, "StairWindowBar", Vector3.new(3.8, 0.2, 0.3), windowFrame, COLORS.darkWood, M.Wood)
+	local moon = Instance.new("SurfaceLight")
+	moon.Face = Enum.NormalId.Front
+	moon.Brightness = 0.8
+	moon.Range = 14
+	moon.Angle = 80
+	moon.Color = Color3.fromRGB(120, 150, 255)
+	moon.Parent = pane
 	-- Poręcze na ścianie między biegami
 	local rails = {
 		{ o + Vector3.new(57.6, y0 + 3.2, 16), o + Vector3.new(57.6, y0 + 10.2, 4) },
@@ -475,6 +625,34 @@ local function buildFloorWalls(building, f: number)
 		Parts.Blob(d, "Plant", Vector3.new(2.2, 3, 2.2), CFrame.new(o + Vector3.new(1.4, y0 + 2.6, 22.4)), COLORS.bush, M.Grass)
 	end
 
+	-- Belki pod sufitem
+	for _, x in { 3, 19.5, 32.5, 49 } do
+		Parts.Deco(d, "Beam", Vector3.new(0.7, 0.6, CORRIDOR_MAX - CORRIDOR_MIN - 1), CFrame.new(o + Vector3.new(x, y0 + WALL_HEIGHT - 0.4, 20)), COLORS.darkWood, M.Wood)
+	end
+	-- Tabliczka z zasadą piętra przy wejściu z klatki schodowej (podpowiedź, jak przeżyć)
+	local rule = ({ [0] = "💰 CZYNSZ PŁATNY W BIURZE", [1] = "🤫 CISZA NOCNA! NIE BIEGAĆ", [2] = "🐾 UWAGA, KOT! GASIĆ ŚWIATŁO" })[f]
+	local rulePosition = o + Vector3.new(47, y0 + 7, CORRIDOR_MIN + 0.6)
+	local ruleSign = Parts.Deco(d, "RuleSign", Vector3.new(7, 1.6, 0.16), facing(rulePosition, Vector3.new(0, 0, 1)), Color3.fromRGB(236, 226, 200))
+	Parts.Deco(d, "RuleSignFrame", Vector3.new(7.4, 2, 0.1), facing(rulePosition - Vector3.new(0, 0, 0.04), Vector3.new(0, 0, 1)), COLORS.darkWood, M.Wood)
+	Parts.Sign(ruleSign, Enum.NormalId.Front, rule, Color3.fromRGB(150, 40, 40))
+	if f == 0 then
+		-- Skrzynki na listy, tablica ogłoszeń i stojak na parasole przy wejściu
+		local wall = facing(o + Vector3.new(5.4, y0 + 5.6, CORRIDOR_MAX - 0.62), Vector3.new(0, 0, -1))
+		for row = 0, 1 do
+			for column = 0, 3 do
+				Parts.Deco(d, "Mailbox", Vector3.new(1.3, 0.9, 0.36), wall * CFrame.new(-2.1 + column * 1.4, row * 1.05 - 0.5, 0), Color3.fromRGB(70, 96, 110), M.Metal)
+				Parts.Deco(d, "MailSlot", Vector3.new(0.8, 0.1, 0.4), wall * CFrame.new(-2.1 + column * 1.4, row * 1.05 - 0.3, -0.02), COLORS.black)
+			end
+		end
+		local board = facing(o + Vector3.new(5.4, y0 + 6.2, CORRIDOR_MIN + 0.6), Vector3.new(0, 0, 1))
+		Parts.Deco(d, "NoticeBoard", Vector3.new(4.6, 3, 0.16), board, Color3.fromRGB(150, 110, 70), M.Fabric)
+		for _, note in { { -1.3, 0.5, 8 }, { 0.2, 0.6, -6 }, { 1.4, -0.4, 4 }, { -0.6, -0.7, -10 } } do
+			Parts.Deco(d, "Note", Vector3.new(1, 1.1, 0.18), board * CFrame.new(note[1], note[2], -0.02) * CFrame.Angles(0, 0, math.rad(note[3])), pick(building.rng, { Color3.fromRGB(245, 240, 220), Color3.fromRGB(250, 230, 150), Color3.fromRGB(200, 225, 240) }))
+		end
+		Parts.Deco(d, "UmbrellaStand", Vector3.new(1.8, 1.1, 1.1), CFrame.new(o + Vector3.new(1.6, y0 + 0.9, 17.4)) * CFrame.Angles(0, 0, math.rad(90)), COLORS.black, M.Metal, Enum.PartType.Cylinder)
+		Parts.Deco(d, "Umbrella", Vector3.new(0.2, 3.4, 0.2), CFrame.new(o + Vector3.new(1.7, y0 + 2.2, 17.3)) * CFrame.Angles(math.rad(8), 0, math.rad(6)), Color3.fromRGB(150, 40, 50), M.Fabric)
+	end
+
 	-- Zegar ścienny (godzinę wpisuje u siebie każdy gracz): widać czas bez patrzenia w HUD
 	local clockCenter = o + Vector3.new(20, y0 + 8.6, CORRIDOR_MAX - 0.62)
 	local clockFrame = CFrame.lookAt(clockCenter, clockCenter - Vector3.new(0, 0, 1))
@@ -498,59 +676,51 @@ end
 local function buildFacade(building, rng: Random)
 	local o = building.origin
 	local d = building.decor
-	local x = -1.02 -- zewnętrzne lico fasady
-	local function facadeWindow(y: number, z: number, lit: boolean, cat: boolean)
-		local center = o + Vector3.new(x, y, z)
-		Parts.Deco(d, "FacadeWindowFrame", Vector3.new(0.3, 5.4, 4.2), CFrame.new(center), COLORS.trim, M.Plaster)
-		Parts.Deco(d, "FacadeWindow", Vector3.new(0.34, 4.6, 3.4), CFrame.new(center + Vector3.new(-0.02, 0, 0)), if lit then COLORS.windowLit else COLORS.window, if lit then M.Neon else M.Glass)
-		Parts.Deco(d, "FacadeWindowBar", Vector3.new(0.38, 4.6, 0.2), CFrame.new(center + Vector3.new(-0.03, 0, 0)), COLORS.trim, M.Plaster)
-		Parts.Deco(d, "FacadeSill", Vector3.new(0.7, 0.35, 4.8), CFrame.new(center + Vector3.new(-0.2, -2.85, 0)), COLORS.trim, M.Plaster)
-		if cat then
-			-- Ktoś wygląda przez okno...
-			for _, dz in { -0.6, 0.6 } do
-				Parts.Deco(d, "CatEye", Vector3.new(0.45, 0.45, 0.45), CFrame.new(center + Vector3.new(-0.22, 0.3, dz)), Color3.fromRGB(255, 240, 80), M.Neon, Enum.PartType.Ball)
-			end
-		end
-	end
-	for f = 0, FLOORS - 1 do
-		local y = f * FLOOR_HEIGHT + 6.5
-		for _, z in { 5, 11.5, 28.5, 35 } do
-			local cat = f == 2 and z == 28.5
-			facadeWindow(y, z, not cat and rng:NextNumber() < 0.4, cat)
-		end
-		if f > 0 then
-			facadeWindow(y, 20, rng:NextNumber() < 0.5, false)
-			-- Gzyms między piętrami
-			Parts.Deco(d, "Cornice", Vector3.new(0.6, 0.7, D + 2.4), CFrame.new(o + Vector3.new(x - 0.2, f * FLOOR_HEIGHT - 0.3, D / 2)), COLORS.trim, M.Plaster)
-		end
-	end
-	Parts.Deco(d, "Cornice", Vector3.new(1.1, 1, D + 3), CFrame.new(o + Vector3.new(x - 0.4, FLOORS * FLOOR_HEIGHT - 0.6, D / 2)), COLORS.trim, M.Plaster)
-	-- Portal drzwi, daszek z lampą i numer domu
-	for _, z in { 20 - DOOR_WIDTH / 2 - 0.4, 20 + DOOR_WIDTH / 2 + 0.4 } do
-		Parts.Deco(d, "PortalJamb", Vector3.new(0.6, DOOR_HEIGHT + 0.4, 0.8), CFrame.new(o + Vector3.new(x - 0.15, (DOOR_HEIGHT + 0.4) / 2, z)), COLORS.trim, M.Plaster)
-	end
-	Parts.Deco(d, "PortalHead", Vector3.new(0.6, 0.9, DOOR_WIDTH + 1.6), CFrame.new(o + Vector3.new(x - 0.15, DOOR_HEIGHT + 0.85, 20)), COLORS.trim, M.Plaster)
-	Parts.Deco(d, "Canopy", Vector3.new(2.6, 0.3, DOOR_WIDTH + 2.4), CFrame.new(o + Vector3.new(x - 1.3, DOOR_HEIGHT + 1.5, 20)) * CFrame.Angles(0, 0, math.rad(-8)), COLORS.fence, M.Slate)
-	Parts.Lamp(d, o + Vector3.new(x - 1.4, DOOR_HEIGHT + 0.6, 20), 1.2, 18, Color3.fromRGB(255, 210, 150), false)
-	local number = Parts.Deco(d, "HouseNumber", Vector3.new(0.12, 1.3, 1.6), CFrame.new(o + Vector3.new(x - 0.08, 7, 20 + DOOR_WIDTH / 2 + 2.2)), COLORS.black)
+	-- Fasada patrzy na zachód (na podwórko): okna z okiennicami, balkon nad drzwiami, dach z lukarnami
+	local frame = CFrame.lookAt(o + Vector3.new(-1.02, 0, D / 2), o + Vector3.new(-20, 0, D / 2))
+	Scenery.Facade(d, frame, {
+		rng = rng,
+		width = D + 2,
+		height = FLOORS * FLOOR_HEIGHT,
+		rows = { 6.5, FLOOR_HEIGHT + 6.5, FLOOR_HEIGHT * 2 + 6.5 },
+		columns = { -16, -8, 0, 8, 16 },
+		skipGround = { 0 },
+		windowSize = Vector2.new(3.4, 4.6),
+		wall = COLORS.outer,
+		door = { width = DOOR_WIDTH, height = DOOR_HEIGHT },
+		balconyY = FLOOR_HEIGHT + 0.2,
+		cat = { row = 3, column = -8 },
+		litChance = 0.4,
+		roof = { rise = 6, run = 5, depth = 6 },
+		dormers = { -12, 0, 12 },
+		chimneys = { -15, 9 },
+		ivy = 17,
+	})
+	local number = Parts.Deco(d, "HouseNumber", Vector3.new(0.12, 1.3, 1.6), CFrame.new(o + Vector3.new(-1.1, 5, 20 + DOOR_WIDTH / 2 + 2.2)), COLORS.black)
 	Parts.Sign(number, Enum.NormalId.Left, "13", COLORS.gold)
 end
 
-local function buildYard(building)
+local function buildYard(building, rng: Random)
 	local o = building.origin
 	local g = building.geometry
 	local d = building.decor
 	Parts.Box(g, "Yard", o + Vector3.new(YARD_X - 6, -1, 2), o + Vector3.new(-1, 0, 38), COLORS.yard, M.Cobblestone)
 	Parts.Deco(d, "YardPath", Vector3.new(-YARD_X + 4, 0.06, 6), CFrame.new(o + Vector3.new((YARD_X - 5) / 2, 0.03, 20)), COLORS.path, M.Cobblestone)
-	-- Płot: boki i tył z bramą na środku
+	-- Płot z desek: boki i tył z bramą na środku, słupki i daszek
 	for _, z in { 2, 38 } do
 		Parts.Box(g, "Fence", o + Vector3.new(YARD_X, 0, z - 0.3), o + Vector3.new(-1, 7, z + 0.3), COLORS.fence, M.WoodPlanks)
+		Parts.Deco(d, "FenceCap", Vector3.new(-YARD_X - 1, 0.3, 1), CFrame.new(o + Vector3.new((YARD_X - 1) / 2, 7.15, z)), COLORS.darkWood, M.Wood)
+		for x = YARD_X + 3, -3, 5.6 do
+			Parts.Deco(d, "FencePost", Vector3.new(0.7, 7.6, 0.9), CFrame.new(o + Vector3.new(x, 3.8, z)), COLORS.darkWood, M.Wood)
+		end
 	end
-	Parts.Box(g, "Fence", o + Vector3.new(YARD_X - 0.3, 0, 2), o + Vector3.new(YARD_X + 0.3, 7, 15), COLORS.fence, M.WoodPlanks)
-	Parts.Box(g, "Fence", o + Vector3.new(YARD_X - 0.3, 0, 25), o + Vector3.new(YARD_X + 0.3, 7, 38), COLORS.fence, M.WoodPlanks)
+	for _, span in { { 2, 15 }, { 25, 38 } } do
+		Parts.Box(g, "Fence", o + Vector3.new(YARD_X - 0.3, 0, span[1]), o + Vector3.new(YARD_X + 0.3, 7, span[2]), COLORS.fence, M.WoodPlanks)
+		Parts.Deco(d, "FenceCap", Vector3.new(1, 0.3, span[2] - span[1]), CFrame.new(o + Vector3.new(YARD_X, 7.15, (span[1] + span[2]) / 2)), COLORS.darkWood, M.Wood)
+	end
 	for _, z in { 14.4, 25.6 } do
 		Parts.Box(g, "GatePost", o + Vector3.new(YARD_X - 0.7, 0, z - 0.7), o + Vector3.new(YARD_X + 0.7, 10, z + 0.7), COLORS.outer, M.Brick)
-		Parts.Lamp(d, o + Vector3.new(YARD_X + 1.1, 8.6, z), 1, 16, Color3.fromRGB(150, 255, 170), false)
+		Scenery.Lantern(d, o + Vector3.new(YARD_X + 1.3, 8.4, z), 1, 16, Color3.fromRGB(150, 255, 170))
 	end
 	-- Szyld nad bramą: miejsce ucieczki (po nim klient pokazuje strzałkę celu)
 	local sign = Parts.Deco(d, "GateSign", Vector3.new(0.4, 2.4, 12.6), CFrame.new(o + Vector3.new(YARD_X, 11.2, 20)), Color3.fromRGB(40, 30, 25))
@@ -566,26 +736,65 @@ local function buildYard(building)
 		barrier.CastShadow = false
 	end
 	-- Latarnie, krzaki pod ścianą, ławka
-	for _, z in { 7, 33 } do
-		local post = Parts.Block(g, "LampPost", Vector3.new(0.6, 10, 0.6), CFrame.new(o + Vector3.new(-15, 5, z)), COLORS.fence, M.Metal)
-		Parts.Lamp(d, post.CFrame.Position + Vector3.new(0, 5.4, 0), 1.2, 30, Color3.fromRGB(255, 210, 150), false)
+	Scenery.StreetLamp(d, o + Vector3.new(-15, 0, 6.5), Vector3.new(0, 0, 1), 1.2)
+	Scenery.StreetLamp(d, o + Vector3.new(-15, 0, 33.5), Vector3.new(0, 0, -1), 1.2)
+	for _, z in { 4, 12, 28, 36 } do
+		Scenery.Bush(d, o + Vector3.new(-3.2, 0, z), Vector3.new(3, 2.6, 4.4), COLORS.bush)
 	end
-	for _, z in { 5, 11.5, 28.5, 35 } do
-		Parts.Blob(d, "Bush", Vector3.new(3, 2.6, 4.4), CFrame.new(o + Vector3.new(-3, 1.1, z)), COLORS.bush, M.Grass)
+	Scenery.Bench(d, CFrame.new(o + Vector3.new(-22, 0, 36)))
+	-- Straszne podwórko: bezlistne drzewa, pranie na sznurze (jedno prześcieradło wygląda jak duszek),
+	-- kosze na śmieci, skrzynki, kałuże, kępy trawy pod płotem i wrony
+	Scenery.BareTree(d, o + Vector3.new(-26, 0, 8.5), 1.25, rng)
+	Scenery.BareTree(d, o + Vector3.new(-9.5, 0, 32), 1, rng)
+	Scenery.Clothesline(d, o + Vector3.new(-27, 0, 28), o + Vector3.new(-13.5, 0, 30.5), rng)
+	Scenery.TrashBin(d, o + Vector3.new(-6.5, 0, 4), rng)
+	Scenery.TrashBin(d, o + Vector3.new(-9.6, 0, 4.2), rng)
+	Scenery.Crates(d, o + Vector3.new(-29, 0, 34.5), rng)
+	Scenery.Puddle(d, o + Vector3.new(-12, 0.06, 21.5), 4.5)
+	Scenery.Puddle(d, o + Vector3.new(-21, 0.02, 12.5), 3.2)
+	Scenery.Puddle(d, o + Vector3.new(-6, 0.02, 27), 2.6)
+	for x = YARD_X + 2, -4, 4.4 do
+		for _, z in { 2.9, 37.1 } do
+			if rng:NextNumber() < 0.7 then
+				Parts.Blob(d, "Grass", Vector3.new(1.6, 1.4 + rng:NextNumber(), 1), CFrame.new(o + Vector3.new(x + rng:NextNumber() * 2, 0.6, z)), COLORS.bush:Lerp(Color3.fromRGB(120, 110, 60), rng:NextNumber() * 0.4), M.Grass)
+			end
+		end
 	end
-	local bench = CFrame.new(o + Vector3.new(-22, 0, 36))
-	Parts.Block(g, "BenchSeat", Vector3.new(6, 0.4, 1.8), bench * CFrame.new(0, 1.6, 0), COLORS.wood, M.Wood)
-	Parts.Block(g, "BenchBack", Vector3.new(6, 1.6, 0.3), bench * CFrame.new(0, 2.6, 0.8), COLORS.wood, M.Wood)
-	for _, bx in { -2.6, 2.6 } do
-		Parts.Deco(d, "BenchLeg", Vector3.new(0.3, 1.6, 1.6), bench * CFrame.new(bx, 0.8, 0), COLORS.fence, M.Metal)
-	end
+	Scenery.Crow(d, CFrame.lookAt(o + Vector3.new(YARD_X, 12.4, 16.5), o + Vector3.new(0, 12.4, 18)))
+	Scenery.Crow(d, CFrame.lookAt(o + Vector3.new(-19, 7.3, 2), o + Vector3.new(-16, 7.3, 20)))
+	Scenery.Crow(d, CFrame.lookAt(o + Vector3.new(-23, 3.6, 36.8), o + Vector3.new(-10, 3.6, 20)))
 	-- Drzwi frontowe (zamknięte do zapłaty czynszu albo północy)
 	local door = Parts.Block(g, "FrontDoor", Vector3.new(0.8, DOOR_HEIGHT, DOOR_WIDTH), CFrame.new(o + Vector3.new(-0.5, DOOR_HEIGHT / 2, 20)), COLORS.darkWood, M.Wood)
+	for _, y in { -2.4, 2.4 } do
+		Parts.Deco(d, "FrontDoorPanel", Vector3.new(0.1, 3.6, 3.6), door.CFrame * CFrame.new(-0.42, y, 0), COLORS.wood, M.Wood)
+	end
+	Parts.Deco(d, "FrontDoorKnob", Vector3.new(0.5, 0.5, 0.5), door.CFrame * CFrame.new(-0.6, -0.4, 1.8), COLORS.gold, M.Metal, Enum.PartType.Ball)
 	Parts.Billboard(door, "🚪 Otworzy się po zapłacie czynszu", Color3.fromRGB(255, 230, 180), 6.5, Vector2.new(300, 50))
 	building.frontDoor = door
 	-- Strefa ucieczki: przejście przez bramę (sprawdzane w pętli rundy)
 	building.exitMin = o + Vector3.new(YARD_X - 5.5, -1, 14.5)
 	building.exitMax = o + Vector3.new(YARD_X + 2.5, 12, 25.5)
+end
+
+-- To, co widać za płotem: ulica za bramą, domy po drugiej stronie i sąsiednie kamienice po bokach podwórka
+local function buildSurroundings(building, rng: Random)
+	local o = building.origin
+	local d = building.decor
+	Scenery.Street(d, CFrame.new(o + Vector3.new(YARD_X - 17, 0, 20)), 130, 14)
+	for _, z in { -14, 46 } do
+		Scenery.StreetLamp(d, o + Vector3.new(YARD_X - 25.5, 0, z), Vector3.new(1, 0, 0), 1.2)
+	end
+	for i, z in { -30, -4, 22, 48, 74 } do
+		local from = o + Vector3.new(YARD_X - 30, 0, z)
+		Scenery.House(d, CFrame.lookAt(from, from + Vector3.new(1, 0, 0)), 24, 22 + rng:NextInteger(0, 12) + (i % 2) * 5, 16, rng)
+	end
+	-- Sąsiednie kamienice zamykają podwórko z boków (ich okna patrzą na podwórko)
+	local south = o + Vector3.new(-19, 0, 1.2)
+	Scenery.House(d, CFrame.lookAt(south, south + Vector3.new(0, 0, 1)), 34, 30, 20, rng)
+	local north = o + Vector3.new(-19, 0, 38.8)
+	Scenery.House(d, CFrame.lookAt(north, north - Vector3.new(0, 0, 1)), 34, 34, 20, rng)
+	Scenery.BareTree(d, o + Vector3.new(YARD_X - 8, 0, 6), 1.1, rng)
+	Scenery.BareTree(d, o + Vector3.new(YARD_X - 8, 0, 36), 1.3, rng)
 end
 
 -- Skrzynia w zakamarku za klatką schodową (parter i 1. piętro; na 2. piętrze śpi tam Mruczek)
@@ -643,9 +852,10 @@ function BuildingBuilder.Build(origin: Vector3, parent: Instance, seed: number)
 			buildHoleRailing(building, f)
 		end
 	end
-	Parts.Box(geometry, "Roof", origin + Vector3.new(-1.6, FLOORS * FLOOR_HEIGHT - 1, -1.6), origin + Vector3.new(W + 1.6, FLOORS * FLOOR_HEIGHT, D + 1.6), COLORS.fence, M.Slate)
+	Parts.Box(geometry, "Roof", origin + Vector3.new(-1, FLOORS * FLOOR_HEIGHT - 1, -1), origin + Vector3.new(W + 1, FLOORS * FLOOR_HEIGHT, D + 1), COLORS.fence, M.Slate)
 	buildFacade(building, rng)
-	buildYard(building)
+	buildYard(building, rng)
+	buildSurroundings(building, rng)
 
 	-- Pokoje: na parterze biuro + 3 mieszkania, na piętrach po 4 mieszkania
 	local apartments = {}

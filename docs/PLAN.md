@@ -72,6 +72,11 @@ Lekki horror dla dzieci w kooperacji 1–4 graczy. Straszy, ale nie przeraża: n
   - hol: portal, gzymsy, kominy, tablica „Dzisiejsza noc” na ścianie,
   - interfejs: na telefonie przyciski wokół przycisku skoku (wygodne dla kciuka), większy HUD na małych ekranach, komunikaty nisko (środek ekranu wolny), monety wyskakują obok licznika kieszeni,
   - test `tests/test_client` uruchamia cały kod interfejsu (54 sprawdzenia, komputer i telefon, PL i EN).
+- [x] **Więcej szczegółów, także z zewnątrz** (moduł `World/Scenery`):
+  - fasady (hol i kamienica z rundy): okiennice, skrzynki z kwiatami, balkon nad drzwiami, gzymsy z ząbkami, narożniki, rynny, okienka piwnic, bluszcz, dach z lukarnami, kominy z dymem, antena,
+  - podwórko: bezlistne drzewa, pranie na sznurze (jedno prześcieradło wygląda jak duszek), kosze, skrzynki, kałuże, wrony, latarnie z wysięgnikiem; po bokach sąsiednie kamienice, za bramą ulica i domy,
+  - hol: kuty płot z bramą, ulica, rząd domów naprzeciwko, sąsiednie kamienice, pomnik złotego klucza, jesienne drzewa,
+  - wnętrza: aneksy kuchenne, fotele z lampą, regały z książkami, miś, kapcie, nakrycie stołu, wieszaki, lustra, pajęczyny; w korytarzach belki, skrzynki na listy, tablica ogłoszeń i tabliczki z zasadą piętra; okna z księżycem na klatce schodowej.
 - [ ] **Faza 3 — więcej kamienicy**: piwnica z **Pralką**, **Skarpetnik** (kradnie monety), bezpiecznik i proste zagadki, losowy układ mieszkań.
 - [ ] **Faza 4 — powody do powrotu**: zwierzaki-pomocnicy (pies węszy monety, sowa widzi w ciemności), nagroda dzienna, kody, ranking najszybszych rund, kosmetyki.
 - [ ] **Faza 5 — fabuła**: karteczki i rozmowy, czyli dlaczego Klucznik zmienia się o północy i jak złamać klątwę (zakończenie).

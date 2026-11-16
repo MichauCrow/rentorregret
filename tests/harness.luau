@@ -116,6 +116,7 @@ H.env = {
 	ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
 	NumberSequence = roblox.NumberSequence,
 	NumberRange = roblox.NumberRange,
+	NumberSequenceKeypoint = roblox.NumberSequenceKeypoint,
 	Random = roblox.Random or {
 		new = function(seed)
 			local state = (seed or os.clock() * 1e6) % 2147483647

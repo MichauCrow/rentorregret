@@ -29,7 +29,7 @@ GameConfig.HUNT_DURATION = 75 -- pościg Klucznika po północy, gdy czynsz nie 
 GameConfig.FINALE_TIME = 45 -- ostatnie sekundy przed północą: "kamienica się budzi" (gdy czynsz niezapłacony)
 GameConfig.FINALE_SPEED = 1.2 -- potwory w finale są szybsze
 GameConfig.END_SCREEN_TIME = 6 -- tyle sekund gracz widzi podsumowanie przed powrotem do holu
-GameConfig.MAX_ROUNDS = 6 -- ile rozgrywek naraz na jednym serwerze (sloty kamienic)
+GameConfig.MAX_ROUNDS = 4 -- ile rozgrywek naraz na jednym serwerze (każda kamienica to ponad 2000 części)
 
 -- Czynsz i monety w kamienicy
 GameConfig.RENT_BASE = 120
