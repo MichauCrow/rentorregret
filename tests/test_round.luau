@@ -267,6 +267,26 @@ put(p3, landlord.position + V3.new(2, 0, 0))
 round2:Tick(0.1)
 check(round2.players[p3].status == "ghost" and finished2[p3] ~= nil, "Klucznik złapał Zosię; runda kończy się (" .. tostring(finished2[p3] and finished2[p3].outcome) .. ")")
 
+-- 11. Wspólne moduły klienta i serwera: hałas i animacje potworów ----------------------------------
+local Noise = H.load(H.root .. "/shared/Modules/Noise")
+check(Noise.Radius(0, 50, 50, 1) == 0, "stojący gracz jest cichy")
+check(Noise.Radius(10, 0, 50, 1) == 0, "powolny chód z pustymi kieszeniami jest cichy")
+check(Noise.Radius(10, 50, 50, 1) == GameConfig.NOISE_COIN_RADIUS, "pełne kieszenie brzęczą przy chodzeniu")
+check(Noise.Radius(20, 0, 50, 1) == GameConfig.NOISE_RUN_RADIUS, "bieg słychać z daleka")
+check(Noise.Radius(20, 0, 50, 0.45) < GameConfig.NOISE_RUN_RADIUS * 0.5, "Cichobiegi zmniejszają hałas")
+local MonsterAnimations = H.load(H.root .. "/shared/Modules/MonsterAnimations")
+local animCount = 0
+for _, defs in MonsterAnimations do
+	for _, def in defs do
+		for _, mood in { "alert", "curious", "sleep", nil } do
+			local result = def.fn(1.234, CF.new(1, 2, 3), mood)
+			assert(typeof(result) == "CFrame", def.part)
+		end
+		animCount += 1
+	end
+end
+check(animCount >= 9, "animacje potworów liczą się bez błędów (" .. animCount .. ")")
+
 print("\nWSZYSTKIE TESTY PRZESZŁY")
 round:Destroy()
 round2:Destroy()

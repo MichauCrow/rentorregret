@@ -31,7 +31,22 @@ local samples = {
 	"Poziom 2/3",
 	"KUP: 1 500 💰",
 	"PIĘTRO 2",
-	"F: latarka   Shift: bieg   E: szukaj",
+	"F latarka · Shift bieg · E szukaj · 1-4 komunikaty",
+	"🎒 23/50 🔔 · 🔑 · 📍 1. piętro",
+	"🎒 0/50 · 📍 Parter",
+	"👣 Kroki · z lewej · blisko",
+	"🐾 Mruczenie · z tyłu · bardzo blisko",
+	"🔑 Brzęk kluczy · nad Tobą · daleko",
+	"👣 Kroki · za ścianą",
+	"🌙 Dzisiejsza noc: 🔌 Noc bez prądu",
+	"DZISIEJSZA NOC\n🐟 Głodny Mruczek\nMruczek mało śpi i widzi światło z daleka. Na 2. piętrze więcej monet!",
+	"🔌 Noc bez prądu\nLampy prawie nie świecą, ale baterie są większe. Nagrody x1.3!",
+	"📣 Ala: 💰 Tutaj monety!",
+	"🕛 Czynsz: 190 💰 do północy!",
+	"😮 O włos: 2 razy (+20 💰)",
+	"😮 O WŁOS! +10 💰",
+	"😮‍💨 Uff! Udało się! +10 💰",
+	"🎯 🚪 Szybko! Schowaj się w szafie!",
 	"Cichy Sąsiad Cię usłyszał i odprowadził do łóżka!\n👻 Jesteś teraz duszkiem.",
 	"JAK GRAĆ\n🔍 Przeszukuj meble i zbieraj monety\n💰 Zanieś je do skrzynki Klucznika\n🕛 Zapłać czynsz przed północą!\n🤫 Sąsiad słyszy bieganie\n🔦 Mruczek idzie za światłem\n🚪 Chowaj się w szafach",
 }
@@ -40,7 +55,7 @@ local samples = {
 local IGNORE = {
 	"^%[", "^ ", " $", "^%.", "^:", "AssetsConfig", "raport", "Muzyka ", "serwer", "puszkę", "myśli", "ściany", "^load", "^save",
 	"Nieznan", "wczytuje się", "^Wpłać jeszcze", "^Szukaj dalej", "^PIĘTRO $", "^KUP: $", "^Pan Klucznik $", "UCIEKAJ! $",
-	"Twoje dane", "Nie udało się wczytać", "%%s", "^Wpłacono $", "dane gracza", "clock tick", "Jak grać",
+	"Twoje dane", "Nie udało się wczytać", "%%s", "%%d", "^kamienica się budzi$", "^schowaj się!$", "^😮 O WŁOS! %+$", "^😮‍💨 Uff! Udało się! %+$", "^Wpłacono $", "dane gracza", "clock tick", "Jak grać",
 }
 
 local POLISH_LETTERS = { "ą", "ć", "ę", "ł", "ń", "ó", "ś", "ź", "ż", "Ą", "Ć", "Ę", "Ł", "Ń", "Ó", "Ś", "Ź", "Ż" }

@@ -323,7 +323,7 @@ local function buildFloorWalls(building, f: number)
 	-- Zegar ścienny w korytarzu (godzinę wpisuje u siebie każdy gracz): widać czas bez patrzenia w HUD
 	local clockCenter = o + Vector3.new(20, y0 + 9.5, CORRIDOR_MAX - 0.6)
 	local face = Parts.Deco(building.decor, "WallClock", Vector3.new(0.2, 3.4, 3.4), CFrame.lookAt(clockCenter, clockCenter - Vector3.new(0, 0, 1)) * CFrame.Angles(0, math.rad(90), 0), Color3.fromRGB(245, 235, 210), Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
-	local rim = Parts.Deco(building.decor, "WallClockRim", Vector3.new(0.15, 3.8, 3.8), face.CFrame * CFrame.new(0.08, 0, 0), COLORS.darkWood, Enum.Material.Wood, Enum.PartType.Cylinder)
+	local rim = Parts.Deco(building.decor, "WallClockRim", Vector3.new(0.15, 3.8, 3.8), face.CFrame * CFrame.new(-0.1, 0, 0), COLORS.darkWood, Enum.Material.Wood, Enum.PartType.Cylinder)
 	rim.Name = "WallClockRim"
 	local board = Parts.Deco(building.decor, "WallClockText", Vector3.new(2.6, 1.2, 0.05), CFrame.lookAt(clockCenter - Vector3.new(0, 0, 0.15), clockCenter - Vector3.new(0, 0, 1.15)), Color3.fromRGB(245, 235, 210))
 	board.Transparency = 1

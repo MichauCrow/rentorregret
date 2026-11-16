@@ -23,6 +23,11 @@ local PRESETS = {
 		correction = { Saturation = 0, Contrast = 0.18, Brightness = 0, TintColor = Color3.fromRGB(255, 205, 235) },
 		atmosphere = { Density = 0.4, Color = Color3.fromRGB(100, 40, 80), Decay = Color3.fromRGB(60, 20, 50), Haze = 0.8 },
 	},
+	finale = {
+		lighting = { ClockTime = 0, Brightness = 0.35, Ambient = Color3.fromRGB(34, 16, 24), OutdoorAmbient = Color3.fromRGB(50, 25, 35), FogEnd = 130, FogColor = Color3.fromRGB(26, 6, 14), ExposureCompensation = 0.05 },
+		correction = { Saturation = 0.05, Contrast = 0.2, Brightness = 0, TintColor = Color3.fromRGB(255, 200, 200) },
+		atmosphere = { Density = 0.42, Color = Color3.fromRGB(110, 40, 60), Decay = Color3.fromRGB(60, 20, 40), Haze = 0.9 },
+	},
 	ghost = {
 		lighting = { ClockTime = 0, Brightness = 0.8, Ambient = Color3.fromRGB(70, 75, 100), OutdoorAmbient = Color3.fromRGB(80, 85, 110), FogEnd = 220, FogColor = Color3.fromRGB(40, 50, 80), ExposureCompensation = 0.3 },
 		correction = { Saturation = -0.6, Contrast = 0.05, Brightness = 0.03, TintColor = Color3.fromRGB(200, 230, 255) },
@@ -77,6 +82,8 @@ function LightingController.Start()
 			apply("ghost")
 		elseif round.phase == "hunt" then
 			apply("hunt")
+		elseif round.finale and not round.rentPaid then
+			apply("finale")
 		else
 			apply("round")
 		end

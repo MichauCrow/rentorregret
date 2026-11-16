@@ -56,6 +56,16 @@ Lekki horror dla dzieci w kooperacji 1–4 graczy. Straszy, ale nie przeraża: n
   - cel w HUD („🎯 …”) ze strzałką nad celem, a w pierwszej rundzie także nad najbliższym meblem; podpowiedź przy pierwszym wejściu na piętro,
   - wersja angielska: język z konta Roblox albo z ustawień (auto / PL / EN), test pokrycia tłumaczeń.
   - **Do zrobienia przez Ciebie:** wybrać w Toolboxie dźwięki z pustym ID w `AssetsConfig` (zegar, bicie serca, mruczenie, klucze, szum nocy, „buu!”).
+- [x] **Faza 2.5 — napięcie i czytelność** (kod gotowy, czeka na test w Studio):
+  - pobrzękujące kieszenie: pełne kieszenie słychać przy chodzeniu, a pierścień hałasu pod postacią pokazuje zasięg słuchu Sąsiada,
+  - „Reżyser” nocy: gdy długo nic się nie dzieje, gaśnie prąd na piętrze, słychać kroki nad sufitem, Sąsiad albo Mruczek idą w stronę graczy,
+  - finał o 23:55 (gdy czynsz niezapłacony): potwory szybsze, lampy szaleją, czerwone światło,
+  - potwory zaglądają do szaf, a gracz musi „wstrzymać oddech” (minigra z zielonym polem); bonus „O włos!” za bezruch obok potwora,
+  - zaplanowany pierwszy strach dla nowych graczy: „Słyszysz? Ktoś idzie... Schowaj się w szafie!”,
+  - noce z modyfikatorem (codziennie inna: bez prądu, Sąsiad lunatyk, drogi miesiąc, głodny Mruczek),
+  - szybkie komunikaty drużyny (📣 albo klawisze 1-4) ze znacznikiem w świecie,
+  - płynny ruch potworów rysowany u gracza (serwer wysyła tylko położenie),
+  - nowy HUD: zegar i czynsz na środku, jedna linijka stanu, paski tylko gdy potrzebne, przyciski na prawej krawędzi (z dala od skoku i czatu), strzałka celu na brzegu ekranu, zegary na ścianach, napisy dźwięków z kierunkiem, krótszy ekran startowy z obrazkami, rundy skrócone do 6 minut.
 - [ ] **Faza 3 — więcej kamienicy**: piwnica z **Pralką**, **Skarpetnik** (kradnie monety), bezpiecznik i proste zagadki, losowy układ mieszkań.
 - [ ] **Faza 4 — powody do powrotu**: zwierzaki-pomocnicy (pies węszy monety, sowa widzi w ciemności), nagroda dzienna, kody, ranking najszybszych rund, kosmetyki.
 - [ ] **Faza 5 — fabuła**: karteczki i rozmowy, czyli dlaczego Klucznik zmienia się o północy i jak złamać klątwę (zakończenie).

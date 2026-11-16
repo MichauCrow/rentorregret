@@ -5,6 +5,8 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Modules"):WaitForChild("Format"))
+local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("GameConfig"))
+local NightConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("NightConfig"))
 local ClientState = require(script.Parent.ClientState)
 local HUDController = require(script.Parent.HUDController)
 local SoundController = require(script.Parent.SoundController)
@@ -21,14 +23,6 @@ local SCARES = {
 	neighbor = { face = "🤫", text = "CIIIIII-SZA!", color = Color3.fromRGB(150, 190, 255), message = "Cichy Sąsiad Cię usłyszał i odprowadził do łóżka!" },
 	cat = { face = "🐱", text = "MRRRAU!", color = Color3.fromRGB(255, 210, 80), message = "Mruczek Cię przytulił i nie chce puścić!" },
 	landlord = { face = "🔑", text = "CZYNSZ!!!", color = Color3.fromRGB(255, 150, 60), message = "Klucznik Cię złapał!" },
-}
-
-local TIPS = {
-	"🔍 Przeszukuj meble (przytrzymaj E) i zbieraj monety.",
-	"💰 Zanoś monety do skrzynki Klucznika w BIURZE na parterze.",
-	"🤫 Na 1. piętrze mieszka Cichy Sąsiad: słyszy bieganie. Idź powoli!",
-	"🔦 Na 2. piętrze śpi Mruczek: idzie za światłem latarki. Gaś ją przy nim!",
-	"🚪 W tarapatach chowaj się w szafie.",
 }
 
 local function centerLabel(text: string, size: number, color: Color3, y: number): TextLabel
@@ -134,37 +128,64 @@ local function jumpscare(monster: string)
 	fadeAndDestroy(message, if enabled then 4.5 else 3.5)
 end
 
+-- Start rundy: trzy obrazki zamiast ściany tekstu (zasady potworów uczą podpowiedzi na piętrach)
+local INTRO_CARDS = {
+	{ icon = "🔍", text = "Szukaj monet w meblach" },
+	{ icon = "💰", text = "Wpłać je w BIURZE" },
+	{ icon = "🕛", text = "Zdąż przed północą!" },
+}
+
 local function showIntro(data)
-	local lines = { string.format("🕗 Masz czas do północy, żeby uzbierać %s 💰 czynszu!", Format.Number(data.rent)) }
-	local profile = ClientState.profile
-	if not profile or not profile.tutorialDone then
-		for _, tip in TIPS do
-			table.insert(lines, tip)
-		end
-	else
-		table.insert(lines, TIPS[math.random(1, #TIPS)])
+	local panel = UIKit.panel("Intro", UDim2.fromOffset(700, 300), UDim2.fromScale(0.5, 0.48), Vector2.new(0.5, 0.5))
+	UIKit.label("Title", { Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 10), Text = string.format("🕛 Czynsz: %s 💰 do północy!", Format.Number(data.rent or 0)), TextSize = 32, TextColor3 = C.title }).Parent = panel
+	local row = UIKit.create("Frame", { Size = UDim2.new(1, -40, 0, 150), Position = UDim2.fromOffset(20, 64), BackgroundTransparency = 1 }, {
+		UIKit.create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+	for index, card in INTRO_CARDS do
+		local frame = UIKit.create("Frame", { Size = UDim2.fromOffset(196, 150), BackgroundColor3 = C.card, LayoutOrder = index }, { UIKit.corner(14), UIKit.border(C.stroke, 2) })
+		UIKit.label("Icon", { Size = UDim2.new(1, 0, 0, 80), Position = UDim2.fromOffset(0, 8), Text = card.icon, TextScaled = true }).Parent = frame
+		UIKit.label("Text", { Size = UDim2.new(1, -12, 0, 56), Position = UDim2.fromOffset(6, 90), Text = card.text, TextSize = 20 }).Parent = frame
+		frame.Parent = row
 	end
-	local panel = UIKit.panel("Intro", UDim2.fromOffset(720, 0), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5))
-	panel.AutomaticSize = Enum.AutomaticSize.Y
-	UIKit.create("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }).Parent = panel
-	UIKit.create("UIPadding", { PaddingTop = UDim.new(0, 14), PaddingBottom = UDim.new(0, 14), PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16) }).Parent = panel
-	local title = UIKit.label("Title", { Size = UDim2.new(1, 0, 0, 44), Text = "🏚️ KAMIENICA NOCĄ", TextSize = 34, TextColor3 = C.title, LayoutOrder = 0 })
-	title.Parent = panel
-	for index, line in lines do
-		local label = UIKit.label("Line", { Size = UDim2.new(1, 0, 0, 30), Text = line, TextSize = 21, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left })
-		label.Parent = panel
-	end
-	local ok = UIKit.button("Ok", "RUSZAMY! 🔦", C.button, { Size = UDim2.fromOffset(220, 52), LayoutOrder = #lines + 1, TextSize = 24 })
+	row.Parent = panel
+	local night = NightConfig.ById(data.night)
+	UIKit.label("Night", { Size = UDim2.new(1, -40, 0, 44), Position = UDim2.fromOffset(20, 218), Text = night.icon .. " " .. night.name .. "\n" .. night.description, TextSize = 17, TextColor3 = Color3.fromRGB(255, 225, 150) }).Parent = panel
+	local ok = UIKit.button("Ok", "RUSZAMY! 🔦", C.button, { Size = UDim2.fromOffset(200, 44), Position = UDim2.new(0.5, 0, 1, 18), AnchorPoint = Vector2.new(0.5, 0.5), TextSize = 22 })
 	ok.Activated:Connect(function()
 		panel:Destroy()
 	end)
 	ok.Parent = panel
 	panel.Parent = gui
 	UIKit.popIn(panel)
-	task.delay(if profile and profile.tutorialDone then 6 else 14, function()
+	task.delay(7, function()
 		if panel.Parent then
 			panel:Destroy()
 		end
+	end)
+end
+
+-- Znacznik szybkiego komunikatu w świecie (np. "💰 Tutaj monety!" nad głową gracza, przez kilka sekund)
+local function commsMarker(data)
+	if typeof(data.position) ~= "Vector3" then
+		return
+	end
+	local attachment = Instance.new("Attachment")
+	attachment.Parent = Workspace.Terrain
+	attachment.WorldPosition = data.position
+	local billboard = UIKit.create("BillboardGui", {
+		Size = UDim2.fromOffset(240, 60),
+		StudsOffsetWorldSpace = Vector3.new(0, 3, 0),
+		AlwaysOnTop = true,
+		Adornee = attachment,
+		MaxDistance = 250,
+	})
+	local text = GameConfig.QUICK_CHAT[data.index] or ""
+	UIKit.label("Text", { Size = UDim2.fromScale(1, 1), Text = text, TextScaled = true, TextColor3 = Color3.fromRGB(255, 220, 120) }).Parent = billboard
+	billboard.Parent = gui.Parent -- BillboardGui musi być w PlayerGui (w ScreenGui się nie wyświetla)
+	HUDController.Toast("📣 " .. tostring(data.by) .. ": " .. text, "info")
+	task.delay(6, function()
+		billboard:Destroy()
+		attachment:Destroy()
 	end)
 end
 
@@ -190,6 +211,7 @@ local function showSummary(data)
 		{ string.format("Drużyna wpłaciła: %s / %s 💰", Format.Number(data.teamDeposited), Format.Number(data.rent)), 22, C.text },
 		{ string.format("Ty znalazłeś: %s 💰, wpłaciłeś: %s 💰", Format.Number(data.found), Format.Number(data.deposited)), 22, C.text },
 		{ string.format("NAGRODA: +%s 💰", Format.Number(data.reward)), 34, C.title },
+		{ if (data.closeCalls or 0) > 0 then string.format("😮 O włos: %d razy (+%d 💰)", data.closeCalls, data.closeCalls * GameConfig.CLOSE_CALL_BONUS) else "", 20, Color3.fromRGB(255, 200, 150) },
 		{ "Za chwilę wracasz do holu...", 18, Color3.fromRGB(200, 200, 230) },
 	}
 	for index, line in lines do
@@ -245,6 +267,19 @@ function FxController.Start()
 			SoundController.Play("RentPaid")
 			local label = centerLabel("🎉 CZYNSZ ZAPŁACONY!", 56, C.good, 0.35)
 			fadeAndDestroy(label, 2.5)
+		elseif kind == "finale" then
+			SoundController.Play("Warning")
+			local label = centerLabel("⚠️ 23:55! Kamienica się budzi!", 52, Color3.fromRGB(255, 110, 110), 0.33)
+			shakeCamera(0.6, 2)
+			fadeAndDestroy(label, 2.5)
+		elseif kind == "closecall" then
+			popup("😮 O WŁOS! +" .. (data.bonus or 0) .. " 💰", Color3.fromRGB(255, 200, 150))
+			SoundController.Play("Success", 1.2)
+		elseif kind == "breathOk" then
+			popup("😮‍💨 Uff! Udało się! +" .. (data.bonus or 0) .. " 💰", C.good)
+			SoundController.Play("Success")
+		elseif kind == "comms" then
+			commsMarker(data)
 		elseif kind == "ping" then
 			HUDController.Toast("👻 " .. tostring(data.by) .. " wskazuje: " .. tostring(data.label) .. " (świeci na niebiesko)", "info")
 		elseif kind == "end" then

@@ -10,9 +10,12 @@ local ORDER = {
 	"LightingController",
 	"MovementController",
 	"AmbienceController",
+	"MonsterRenderer",
+	"NoiseController",
 	"HUDController",
 	"ObjectiveController",
 	"FxController",
+	"BreathController",
 	"ShopController",
 	"SettingsController",
 	"LanguageController", -- na końcu: śledzi teksty wszystkich zbudowanych już okien

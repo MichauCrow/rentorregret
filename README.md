@@ -10,7 +10,9 @@ Plan rozwoju i zasady gry: [docs/PLAN.md](docs/PLAN.md).
 - W kamienicy przeszukuj meble (**E**), zbieraj monety i zanoś je do **skrzynki w biurze** na parterze.
 - **F**: latarka, **Shift**: bieg (na telefonie są do tego przyciski).
 - 🤫 **Cichy Sąsiad** (1. piętro) słyszy bieganie. 🐾 **Mruczek** (2. piętro) idzie za światłem latarki.
-- Chowaj się w **szafach**. Złapany gracz zostaje **duszkiem** i dalej pomaga drużynie.
+- Pełne kieszenie **brzęczą**, a kółko pod postacią pokazuje, z jak daleka Cię słychać.
+- Chowaj się w **szafach**, ale gdy potwór zajrzy, trzeba **wstrzymać oddech** (minigra). Złapany gracz zostaje **duszkiem** i dalej pomaga drużynie.
+- **1-4** albo 📣: szybkie komunikaty dla drużyny. Codziennie inna **noc z modyfikatorem**.
 - Po zapłacie czynszu otwiera się brama na podwórku. Za monety kupujesz w **sklepiku** lepszy sprzęt.
 
 ## Struktura
@@ -39,4 +41,4 @@ Język: gra sama wybiera polski albo angielski (z konta Roblox). Można to zmien
 Nowy tekst w grze trzeba dopisać do `src/shared/Modules/Lang/Entries.luau`, a `lune run tests/test_lang` pokaże, czego brakuje.
 
 Komendy testowe (tylko w Studio, w konsoli klienta):
-`game.ReplicatedStorage.Shared.Remotes.DebugCommand:FireServer("coins")`. Inne komendy to `"midnight"`, `"rent"`, `"key"` i `"reset"`.
+`game.ReplicatedStorage.Shared.Remotes.DebugCommand:FireServer("coins")`. Inne komendy to `"midnight"` (północ), `"finale"` (23:55), `"scare"` (zdarzenie Reżysera), `"rent"`, `"key"` i `"reset"`.

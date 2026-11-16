@@ -23,6 +23,8 @@ return {
 		Keys = "", -- brzęk kluczy Klucznika (pętla)
 		AmbientNight = "", -- cichy szum nocy w kamienicy (pętla)
 		Search = "", -- szuranie przy przeszukiwaniu
+		ChaseMusic = "", -- muzyka pościgu (pętla), gra, gdy potwór goni blisko
+		Jingle = "rbxassetid://9113848518", -- brzęk pełnych kieszeni (ten sam co Coins, ciszej i wyżej)
 	},
 	-- Muzyka tylko w holu (w kamienicy cisza i odgłosy)
 	Music = {
@@ -45,6 +47,8 @@ return {
 		Keys = 0.6,
 		AmbientNight = 0.3,
 		Search = 0.4,
+		ChaseMusic = 0.4,
+		Jingle = 0.12,
 		Music = 0.18,
 	},
 	-- Prędkość odtwarzania (wysokość dźwięku)
@@ -53,6 +57,7 @@ return {
 		LandlordSteps = 0.55,
 	},
 	SoundMaxLength = {
+		Jingle = 0.35,
 		Success = 2.5,
 		RentPaid = 3,
 		Warning = 0.6,

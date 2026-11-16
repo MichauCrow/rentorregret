@@ -1,6 +1,8 @@
--- Samouczek i cele: linia "Cel:" pod zegarem i strzałka nad celem w świecie (skrzynka, brama, zamknięte drzwi,
--- a w pierwszej rundzie także najbliższy mebel do przeszukania). Przy pierwszym wejściu na piętro w rundzie
--- duża podpowiedź, kto tam mieszka.
+-- Samouczek i cele: linia "🎯 Cel" pod linijką stanu i znacznik celu w świecie (skrzynka, brama, zamknięte
+-- drzwi, szafa; w pierwszej rundzie także najbliższy mebel). Gdy cel jest poza ekranem, strzałka stoi na
+-- brzegu ekranu i pokazuje kierunek. Przy pierwszym wejściu na piętro duża podpowiedź, kto tam mieszka.
+-- Aktualizuje też zegary ścienne w kamienicy (ta sama godzina co w HUD).
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -12,24 +14,33 @@ local UIKit = require(script.Parent.UIKit)
 local ObjectiveController = {}
 
 local FLOOR_TIPS = {
-	[1] = "🤫 1. piętro: tu mieszka Cichy Sąsiad. Nie biegaj!",
+	[1] = "🤫 1. piętro: tu mieszka Cichy Sąsiad. Nie biegaj i nie noś pełnych kieszeni!",
 	[2] = "🔦 2. piętro: tu śpi Mruczek. Gaś latarkę, gdy jest blisko!",
 }
 local SPOT_HINT_RADIUS = 45
+local EDGE_MARGIN = 70
+local FORCED_TIME = 10
 
 local player = Players.LocalPlayer
 local objectiveLabel = nil
 local marker = nil
 local markerArrow = nil
 local markerDistance = nil
+local edgeGui = nil
+local edgeArrow = nil
 local building = nil
 local floorsSeen = {}
 local currentText = nil
+local forced = nil -- { text, kind, untilTime } wymuszony cel (np. samouczek "schowaj się!")
+
+local function rootPart(): BasePart?
+	local character = player.Character
+	return character and character.PrimaryPart
+end
 
 -- Kamienica, w której jest gracz (najbliższa w folderze Rounds)
 local function findBuilding(): Model?
-	local character = player.Character
-	local root = character and character.PrimaryPart
+	local root = rootPart()
 	local rounds = Workspace:FindFirstChild("Rounds")
 	if not root or not rounds then
 		return nil
@@ -54,14 +65,15 @@ local function find(folderName: string, name: string): BasePart?
 	return if found and found:IsA("BasePart") then found else nil
 end
 
-local function nearestSpot(origin: Vector3, floorY: number): BasePart?
+-- Najbliższa część o danej nazwie (albo z atrybutem Spot) na piętrze gracza
+local function nearest(origin: Vector3, floorY: number, filter): BasePart?
 	local geometry = building and building:FindFirstChild("Geometry")
 	if not geometry then
 		return nil
 	end
 	local best, bestDistance = nil, SPOT_HINT_RADIUS
 	for _, part in geometry:GetChildren() do
-		if part:IsA("BasePart") and part:GetAttribute("Spot") and not part:GetAttribute("Searched") then
+		if part:IsA("BasePart") and filter(part) then
 			local position = part.CFrame.Position
 			if math.abs(position.Y - floorY) < 8 then
 				local distance = (position - origin).Magnitude
@@ -74,17 +86,29 @@ local function nearestSpot(origin: Vector3, floorY: number): BasePart?
 	return best
 end
 
+local function isSpot(part: BasePart): boolean
+	return part:GetAttribute("Spot") == true and not part:GetAttribute("Searched")
+end
+
+local function isWardrobe(part: BasePart): boolean
+	return part.Name == "Wardrobe"
+end
+
 -- Zwraca tekst celu i część, nad którą ma być strzałka
 local function decide(round): (string?, BasePart?)
 	local profile = ClientState.profile
 	local firstRound = profile == nil or not profile.tutorialDone
-	local character = player.Character
-	local root = character and character.PrimaryPart
+	local root = rootPart()
 	if round.status ~= "inside" then
 		return nil, nil
 	end
 	if round.hidden then
+		forced = nil
 		return "🤫 Siedź cicho. Wyjdź, gdy potwór odejdzie.", nil
+	end
+	if forced and os.clock() < forced.untilTime and root then
+		local feet = root.CFrame.Position
+		return forced.text, nearest(feet, feet.Y - 3, isWardrobe)
 	end
 	local gate = find("Decor", "GateSign")
 	local box = find("Geometry", "RentBox")
@@ -114,7 +138,8 @@ local function decide(round): (string?, BasePart?)
 	end
 	local spot = nil
 	if firstRound and root then
-		spot = nearestSpot(root.CFrame.Position, root.CFrame.Position.Y - 3)
+		local feet = root.CFrame.Position
+		spot = nearest(feet, feet.Y - 3, isSpot)
 	end
 	return "🔍 Przeszukuj meble (E) i szukaj monet. Wyżej jest ich więcej!", spot
 end
@@ -131,26 +156,60 @@ local function buildMarker()
 	markerArrow = UIKit.label("Arrow", { Size = UDim2.new(1, 0, 0, 70), Text = "⬇", TextScaled = true, TextColor3 = Color3.fromRGB(255, 225, 90) })
 	markerArrow.Parent = marker
 	markerDistance = UIKit.label("Distance", { Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 74), Text = "", TextSize = 20 })
+	markerDistance:SetAttribute("NoTranslate", true)
 	markerDistance.Parent = marker
 	marker.Parent = player:WaitForChild("PlayerGui")
+
+	-- Strzałka na brzegu ekranu (cel poza widokiem)
+	edgeGui = UIKit.create("ScreenGui", { Name = "ObjectiveEdge", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 4 })
+	edgeArrow = UIKit.label("EdgeArrow", {
+		Size = UDim2.fromOffset(64, 64),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Text = "➤",
+		TextScaled = true,
+		TextColor3 = Color3.fromRGB(255, 225, 90),
+		Visible = false,
+	})
+	edgeArrow:SetAttribute("NoTranslate", true)
+	edgeArrow.Parent = edgeGui
+	edgeGui.Parent = player:WaitForChild("PlayerGui")
+end
+
+local function updateWallClocks(round)
+	local root = rootPart()
+	if not root then
+		return
+	end
+	for _, label in CollectionService:GetTagged("WallClock") do
+		if label:IsA("TextLabel") and label.Parent and label.Parent.Parent then
+			local part = label.Parent.Parent
+			if part:IsA("BasePart") and (part.CFrame.Position - root.CFrame.Position).Magnitude < 150 then
+				label.Text = round.clock
+				label.TextColor3 = if round.timeLeft <= 60 then Color3.fromRGB(200, 30, 30) else Color3.fromRGB(60, 30, 30)
+			end
+		end
+	end
 end
 
 local function update(round)
 	if not round then
 		building = nil
 		floorsSeen = {}
+		forced = nil
 		objectiveLabel.Visible = false
 		marker.Enabled = false
+		edgeArrow.Visible = false
 		currentText = nil
 		return
 	end
 	if not building or not building.Parent then
 		building = findBuilding()
 	end
+	updateWallClocks(round)
 	-- Pierwsze wejście na piętro w tej rundzie: podpowiedź
 	if round.status == "inside" and not floorsSeen[round.floor] then
 		floorsSeen[round.floor] = true
-		if FLOOR_TIPS[round.floor] then
+		if FLOOR_TIPS[round.floor] and not forced then
 			HUDController.Alert(FLOOR_TIPS[round.floor], "info")
 		end
 	end
@@ -159,16 +218,58 @@ local function update(round)
 	if text and text ~= currentText then
 		currentText = text
 		objectiveLabel.Text = "🎯 " .. text
+		objectiveLabel.TextColor3 = if forced and os.clock() < forced.untilTime then Color3.fromRGB(255, 140, 140) else Color3.fromRGB(255, 250, 220)
 	end
 	marker.Adornee = target
 	marker.Enabled = target ~= nil
 end
 
+-- Wymuszony cel na kilka sekund (samouczek: "Szybko! Schowaj się w szafie!")
+function ObjectiveController.Force(text: string)
+	forced = { text = text, untilTime = os.clock() + FORCED_TIME }
+	currentText = nil
+	if ClientState.round then
+		update(ClientState.round)
+	end
+end
+
+local function updateEdgeArrow()
+	local target = marker.Adornee
+	local camera = Workspace.CurrentCamera
+	if not marker.Enabled or not target or not target:IsA("BasePart") or not camera then
+		edgeArrow.Visible = false
+		return
+	end
+	local world = target.CFrame.Position + Vector3.new(0, 4, 0)
+	local screen, onScreen = camera:WorldToViewportPoint(world)
+	if onScreen then
+		edgeArrow.Visible = false
+		return
+	end
+	-- Kierunek do celu w płaszczyźnie ekranu (cel za plecami: odwracamy)
+	local viewport = camera.ViewportSize
+	local center = viewport / 2
+	local direction = Vector2.new(screen.X, screen.Y) - center
+	if screen.Z < 0 then
+		direction = -direction
+	end
+	if direction.Magnitude < 1 then
+		direction = Vector2.new(0, 1)
+	end
+	direction = direction.Unit
+	local halfW, halfH = center.X - EDGE_MARGIN, center.Y - EDGE_MARGIN
+	local scale = math.min(halfW / math.max(math.abs(direction.X), 1e-3), halfH / math.max(math.abs(direction.Y), 1e-3))
+	local position = center + direction * scale
+	edgeArrow.Position = UDim2.fromOffset(position.X, position.Y)
+	edgeArrow.Rotation = math.deg(math.atan2(direction.Y, direction.X))
+	edgeArrow.Visible = true
+end
+
 function ObjectiveController.Init()
 	local gui = UIKit.screenGui("Objective", 4, "hud")
 	objectiveLabel = UIKit.label("Objective", {
-		Size = UDim2.fromOffset(640, 34),
-		Position = UDim2.new(0.5, 0, 0, 108),
+		Size = UDim2.fromOffset(660, 34),
+		Position = UDim2.new(0.5, 0, 0, 140),
 		AnchorPoint = Vector2.new(0.5, 0),
 		Text = "",
 		TextSize = 20,
@@ -181,15 +282,20 @@ end
 
 function ObjectiveController.Start()
 	ClientState.OnRound(update)
-	-- Strzałka podskakuje, a pod nią widać odległość
+	ClientState.OnRoundEvent(function(kind, data)
+		if kind == "tutorial" and type(data) == "table" and data.step == "hide" then
+			HUDController.Alert("👂 Słyszysz? Ktoś idzie...", "bad")
+			ObjectiveController.Force("🚪 Szybko! Schowaj się w szafie!")
+		end
+	end)
+	-- Strzałka podskakuje, pod nią widać odległość; poza ekranem strzałka na brzegu
 	RunService.RenderStepped:Connect(function()
+		updateEdgeArrow()
 		if not marker.Enabled or not marker.Adornee then
 			return
 		end
-		local t = os.clock()
-		markerArrow.Position = UDim2.fromOffset(0, math.abs(math.sin(t * 4)) * -10)
-		local character = player.Character
-		local root = character and character.PrimaryPart
+		markerArrow.Position = UDim2.fromOffset(0, math.abs(math.sin(os.clock() * 4)) * -10)
+		local root = rootPart()
 		local target = marker.Adornee :: BasePart
 		if root then
 			markerDistance.Text = math.floor((target.CFrame.Position - root.CFrame.Position).Magnitude / 3) .. " m"

@@ -13,6 +13,7 @@ local panel = nil
 local scareButton = nil
 local soundButton = nil
 local langButton = nil
+local captionsButton = nil
 
 local function render()
 	local profile = ClientState.profile
@@ -24,6 +25,7 @@ local function render()
 	scareButton.BackgroundColor3 = if scares then C.option else C.button
 	soundButton.Text = SOUND_MODES[profile.settings.sound or 1] or SOUND_MODES[1]
 	langButton.Text = LANG_TEXT[profile.settings.lang or "auto"] or LANG_TEXT.auto
+	captionsButton.Text = if profile.settings.captions ~= false then "💬 Napisy dźwięków: WŁĄCZONE" else "💬 Napisy dźwięków: WYŁĄCZONE"
 end
 
 local function set(key: string, value: any)
@@ -42,7 +44,7 @@ end
 
 function SettingsController.Init()
 	local gui = UIKit.screenGui("Settings", 11)
-	panel = UIKit.panel("Settings", UDim2.fromOffset(480, 375), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5))
+	panel = UIKit.panel("Settings", UDim2.fromOffset(480, 450), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5))
 	UIKit.closeButton(panel, function()
 		panel.Visible = false
 	end)
@@ -73,6 +75,14 @@ function SettingsController.Init()
 		end
 	end)
 	langButton.Parent = panel
+	captionsButton = UIKit.button("Captions", "", C.option, { Size = UDim2.new(1, -60, 0, 60), Position = UDim2.fromOffset(30, 340), TextSize = 22 })
+	captionsButton.Activated:Connect(function()
+		local profile = ClientState.profile
+		if profile then
+			set("captions", profile.settings.captions == false)
+		end
+	end)
+	captionsButton.Parent = panel
 	panel.Parent = gui
 end
 
