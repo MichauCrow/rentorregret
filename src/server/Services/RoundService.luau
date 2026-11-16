@@ -145,6 +145,10 @@ local function debugCommand(player: Player, command: any)
 		round.deposited = round.rent - 1
 	elseif round and command == "key" then
 		round.players[player].hasKey = true
+	elseif round and command == "finale" then
+		round.timeLeft = GameConfig.FINALE_TIME + 1
+	elseif round and command == "scare" then
+		round.calm = round.nextEvent
 	end
 end
 
@@ -165,6 +169,18 @@ function RoundService.Start()
 		local round = playerRound[player]
 		if round then
 			round:GhostPing(player)
+		end
+	end)
+	RemoteService.OnServerEvent("BreathResult", 2, function(player, success)
+		local round = playerRound[player]
+		if round and type(success) == "boolean" then
+			round:BreathResult(player, success)
+		end
+	end)
+	RemoteService.OnServerEvent("QuickChat", 2, function(player, index)
+		local round = playerRound[player]
+		if round and RemoteService.IsInteger(index, 1, #GameConfig.QUICK_CHAT) then
+			round:QuickChat(player, index)
 		end
 	end)
 	RemoteService.OnServerEvent("DebugCommand", 4, debugCommand)

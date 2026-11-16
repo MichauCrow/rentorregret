@@ -1,6 +1,7 @@
 -- Zapisany stan gracza dla klienta (monety, ulepszenia, ustawienia, statystyki) i krótkie komunikaty.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local NightConfig = require(ReplicatedStorage.Shared.Config.NightConfig)
 local ShopConfig = require(ReplicatedStorage.Shared.Config.ShopConfig)
 local DataService = require(script.Parent.DataService)
 local RemoteService = require(script.Parent.RemoteService)
@@ -17,6 +18,9 @@ local SETTINGS = {
 	lang = function(value)
 		return value == "auto" or value == "pl" or value == "en"
 	end,
+	captions = function(value)
+		return type(value) == "boolean"
+	end,
 }
 
 -- Wartość ulepszenia na obecnym poziomie gracza (np. pojemność kieszeni)
@@ -26,6 +30,12 @@ function PlayerStateService.UpgradeValue(player: Player, id: string)
 	local level = if data then data.upgrades[id] or 1 else 1
 	level = math.clamp(level, 1, #upgrade.levels)
 	return upgrade.levels[level].value
+end
+
+-- Gracz, który nie skończył jeszcze żadnej rundy (zaplanowany pierwszy strach w samouczku)
+function PlayerStateService.IsNewPlayer(player: Player): boolean
+	local data = DataService.Get(player)
+	return data ~= nil and not data.tutorialDone
 end
 
 function PlayerStateService.Snapshot(player: Player)
@@ -39,6 +49,7 @@ function PlayerStateService.Snapshot(player: Player)
 		settings = table.clone(data.settings),
 		stats = table.clone(data.stats),
 		tutorialDone = data.tutorialDone,
+		night = NightConfig.Today().id,
 	}
 end
 

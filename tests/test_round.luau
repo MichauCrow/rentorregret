@@ -89,14 +89,15 @@ local folder = roblox.Instance.new("Folder")
 local p1, p2 = makePlayer("Ala"), makePlayer("Olek")
 local round = Round.new(1, V3.new(0, 0.5, 450), { p1, p2 }, folder, function(player, summary) finished[player] = summary end)
 round:Start(function(player, cf) player.Character:PivotTo(cf) end)
-check(round.rent == GameConfig.RENT_BASE + GameConfig.RENT_PER_EXTRA_PLAYER, "czynsz dla 2 graczy = " .. round.rent)
+local NightConfig = H.load(H.root .. "/shared/Config/NightConfig")
+check(round.rent == math.floor((GameConfig.RENT_BASE + GameConfig.RENT_PER_EXTRA_PLAYER) * NightConfig.Value(round.night, "rent")), "czynsz dla 2 graczy = " .. round.rent .. " (noc: " .. round.night.id .. ")")
 local total, keys = 0, 0
 for _, spot in round.building.spots do total += spot.coins; if spot.hasKey then keys += 1 end end
 check(keys == 1, "dokładnie jeden klucz w meblach")
 check(math.abs(total - math.floor(round.rent * GameConfig.COINS_IN_BUILDING_RATIO)) < #round.building.spots, "monet w meblach ~" .. total)
 check(#round.monsters == 2, "Sąsiad i Mruczek na miejscu")
 for _ = 1, 30 do H.services.RunService.Heartbeat:Fire(1 / 30) end
-check(#round.monsters[1].animated > 0 and #round.monsters[2].animated > 0, "animowane części potworów działają")
+check(typeof(round.monsters[1].model:GetAttribute("Pivot")) == "CFrame", "potwór publikuje położenie (Pivot) dla graczy")
 check(lastEvent(p1, "start") ~= nil, "gracz dostał zdarzenie start")
 
 -- 2. Ala zbiera i wpłaca aż do zapłaty czynszu --------------------------------------------------
@@ -166,6 +167,77 @@ round:Tick(0.1)
 check(round.players[p2].status == "ghost", "Olek złapany -> duszek")
 check(#round.bags == 1 and round.bags[1].coins == 17, "worek z 17 monetami po złapanym")
 check(lastEvent(p2, "caught").data.monster == "neighbor", "zdarzenie caught od Sąsiada")
+
+-- 7b. Brzęk pełnych kieszeni: Sąsiad słyszy idącego (nie biegnącego) gracza ------------------------
+local p4 = makePlayer("Kuba")
+local round3 = Round.new(3, V3.new(600, 0.5, 450), { p4 }, folder, function() end)
+round3:Start(function(player, cf) player.Character:PivotTo(cf) end)
+local n3 = round3:MonsterById("neighbor")
+local s4 = round3.players[p4]
+put(p4, n3.position + V3.new(15, 0, 0))
+velocity[p4.Character.HumanoidRootPart] = V3.new(10, 0, 0) -- idzie (nie biegnie)
+s4.carried = 0
+round3:Tick(0.1)
+check(n3.state == "patrol", "pusty spacer: Sąsiad nic nie słyszy")
+s4.carried = s4.capacity
+round3:Tick(0.1)
+check(n3.state == "investigate", "pełne kieszenie brzęczą: Sąsiad słyszy idącego gracza")
+velocity[p4.Character.HumanoidRootPart] = V3.zero
+
+-- 7c. "O włos!": potwór szuka tuż obok nieruchomego gracza ------------------------------------------
+put(p4, n3.position + V3.new(5, 0, 0))
+round3:Tick(0.1)
+check(s4.closeCalls == 1 and lastEvent(p4, "closecall") ~= nil, "O włos! bonus za bezruch obok potwora")
+
+-- 7d. Szafa: potwór zagląda, minigra oddechu ---------------------------------------------------------
+local w3 = round3.building.wardrobes[1]
+s4.carried = 0
+trigger(w3.part, p4)
+check(s4.hidden == w3, "Kuba w szafie")
+round3.elapsed += 3
+check(round3:FindOccupiedWardrobe(w3.part.CFrame.Position, 10) == w3, "potwór znajduje zajętą szafę obok")
+check(round3:CheckWardrobe(w3, "neighbor") and lastEvent(p4, "breath") ~= nil, "gracz dostaje minigrę oddechu")
+round3:BreathResult(p4, true)
+check(s4.status == "inside" and s4.hidden == w3 and s4.closeCalls == 2, "wstrzymany oddech: bezpiecznie + bonus")
+round3.elapsed += GameConfig.WARDROBE_CHECK_COOLDOWN + 1
+check(round3:CheckWardrobe(w3, "landlord"), "drugie sprawdzenie po przerwie")
+round3:BreathResult(p4, false)
+check(s4.status == "ghost" and s4.hidden == nil, "nieudany oddech: złapany (duszek)")
+
+-- 7e. Finał, Reżyser, samouczek, komunikaty ---------------------------------------------------------
+local p5 = makePlayer("Lena")
+local round4 = Round.new(4, V3.new(900, 0.5, 450), { p5 }, folder, function() end)
+round4:Start(function(player, cf) player.Character:PivotTo(cf) end)
+local s5 = round4.players[p5]
+round4.timeLeft = GameConfig.FINALE_TIME + 0.05
+round4:Tick(0.1)
+check(round4.finale and lastEvent(p5, "finale") ~= nil, "23:55: finał")
+check(round4:SpeedScale("cat") == GameConfig.FINALE_SPEED, "w finale potwory są szybsze")
+round4.calm = 100
+put(p5, round4.building.patrol[1][2])
+local before = #events
+round4:Tick(0.1)
+local directorFired = false
+for i = before + 1, #events do
+	local kind = events[i].kind
+	if kind == "sound" or kind == "blackout" then directorFired = true end
+end
+check(directorFired or round4:MonsterById("neighbor").state == "investigate", "Reżyser nocy wywołał zdarzenie")
+s5.newPlayer = true
+s5.tutorial = nil
+round4:Tick(0.1)
+check(s5.tutorial == "waiting", "samouczek: nowy gracz na 1. piętrze")
+s5.tutorialAt = 0
+round4:MonsterById("neighbor").state = "patrol"
+round4:Tick(0.1)
+check(s5.tutorial == "hide" and lastEvent(p5, "tutorial") ~= nil, "samouczek: podpowiedź schowaj się")
+s5.tutorialAt = 0
+round4:Tick(0.1)
+check(s5.tutorial == "done" and round4:MonsterById("neighbor").state == "investigate", "samouczek: Sąsiad idzie sprawdzić")
+round4:QuickChat(p5, 2)
+check(lastEvent(p5, "comms") ~= nil and lastEvent(p5, "comms").data.index == 2, "szybki komunikat do drużyny")
+round3:Destroy()
+round4:Destroy()
 
 -- 8. Duszek wskazuje monety -----------------------------------------------------------------------
 round.elapsed += GameConfig.GHOST_PING_COOLDOWN + 1

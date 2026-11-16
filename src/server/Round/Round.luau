@@ -6,6 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
+local NightConfig = require(ReplicatedStorage.Shared.Config.NightConfig)
 local Format = require(ReplicatedStorage.Shared.Modules.Format)
 local BuildingBuilder = require(ServerScriptService.World.BuildingBuilder)
 local Parts = require(ServerScriptService.World.Parts)
@@ -15,6 +16,7 @@ local RemoteService = require(ServerScriptService.Services.RemoteService)
 local NeighborMonster = require(script.Parent.Monsters.Neighbor)
 local CatMonster = require(script.Parent.Monsters.Cat)
 local LandlordMonster = require(script.Parent.Monsters.Landlord)
+local Monster = require(script.Parent.Monster)
 
 local Round = {}
 Round.__index = Round
@@ -47,7 +49,12 @@ function Round.new(id: number, origin: Vector3, players: { Player }, parent: Ins
 	self.phase = "play"
 	self.timeLeft = GameConfig.ROUND_DURATION
 	self.huntLeft = GameConfig.HUNT_DURATION
-	self.rent = GameConfig.RENT_BASE + (#players - 1) * GameConfig.RENT_PER_EXTRA_PLAYER
+	self.night = NightConfig.Today()
+	self.rent = math.floor((GameConfig.RENT_BASE + (#players - 1) * GameConfig.RENT_PER_EXTRA_PLAYER) * NightConfig.Value(self.night, "rent"))
+	self.finale = false
+	self.calm = 0 -- sekundy bez strasznych zdarzeń (Reżyser nocy)
+	self.nextEvent = math.random(GameConfig.DIRECTOR_CALM_MIN, GameConfig.DIRECTOR_CALM_MAX)
+	self.breathChecks = {} -- [player] = { deadline, monster }
 	self.deposited = 0
 	self.rentPaid = false
 	self.paidAt = nil
@@ -57,6 +64,7 @@ function Round.new(id: number, origin: Vector3, players: { Player }, parent: Ins
 
 	for _, player in players do
 		local flashlight = PlayerStateService.UpgradeValue(player, "flashlight")
+		local battery = math.floor(flashlight.battery * NightConfig.Value(self.night, "battery"))
 		self.players[player] = {
 			status = "inside", -- inside | ghost | escaped | left
 			carried = 0,
@@ -66,14 +74,19 @@ function Round.new(id: number, origin: Vector3, players: { Player }, parent: Ins
 			hasKey = false,
 			hidden = nil, -- szafa, w której gracz siedzi
 			flashlight = false,
-			battery = flashlight.battery,
-			batteryMax = flashlight.battery,
+			battery = battery,
+			batteryMax = battery,
 			lightRange = flashlight.range,
 			capacity = PlayerStateService.UpgradeValue(player, "pockets"),
-			hearing = PlayerStateService.UpgradeValue(player, "shoes"),
+			hearing = PlayerStateService.UpgradeValue(player, "shoes") * NightConfig.Value(self.night, "hearing"),
 			lastPing = -math.huge,
 			escapedUnpaid = false,
 			finished = false,
+			closeCalls = 0,
+			lastCloseCall = -math.huge,
+			lastChat = -math.huge,
+			newPlayer = PlayerStateService.IsNewPlayer(player),
+			tutorial = nil, -- nil -> "waiting" -> "hide" -> "done" (zaplanowany pierwszy strach)
 		}
 		table.insert(self.order, player)
 	end
@@ -139,6 +152,9 @@ function Round:DistributeCoins()
 		spot.coins = 0
 		if math.random() >= GameConfig.SPOT_EMPTY_CHANCE then
 			local weight = (({ [0] = 0.6, [1] = 1, [2] = 1.4 })[spot.floor] or 1) * (0.5 + math.random())
+			if spot.floor == 2 then
+				weight *= NightConfig.Value(self.night, "floor2Coins")
+			end
 			weights[i] = weight
 			sum += weight
 		end
@@ -235,6 +251,7 @@ function Round:EnterWardrobe(player: Player, wardrobe)
 		return
 	end
 	wardrobe.occupant = player
+	wardrobe.enteredAt = self.elapsed
 	state.hidden = wardrobe
 	self:SetFlashlight(player, false)
 	character:PivotTo(wardrobe.inside)
@@ -451,6 +468,7 @@ function Round:Catch(player: Player, monsterId: string)
 		return
 	end
 	state.status = "ghost"
+	self.breathChecks[player] = nil
 	self:SetFlashlight(player, false)
 	local root = rootOf(player)
 	if root then
@@ -517,9 +535,11 @@ function Round:Reward(_player: Player, state, outcome: string): number
 	if state.escapedUnpaid then
 		reward += GameConfig.REWARD_ESCAPED_UNPAID
 	end
+	reward += state.closeCalls * GameConfig.CLOSE_CALL_BONUS
 	if outcome == "caught" then
 		reward *= GameConfig.REWARD_CAUGHT_MULTIPLIER
 	end
+	reward *= NightConfig.Value(self.night, "reward")
 	return math.max(5, math.floor(reward))
 end
 
@@ -547,6 +567,8 @@ function Round:Finish(player: Player, outcome: string)
 		teamDeposited = self.deposited,
 		rent = self.rent,
 		time = if self.paidAt then Format.Time(self.paidAt) else nil,
+		closeCalls = state.closeCalls,
+		night = self.night.id,
 	}
 	self.onFinished(player, summary, state)
 	self:Event(player, "end", summary)
@@ -679,6 +701,214 @@ function Round:RemovePlayer(player: Player)
 	self:CheckEveryoneOut()
 end
 
+-- Napięcie: finał, Reżyser, "O włos!", szafy, pierwszy strach, komunikaty ---------------------------
+
+-- Mnożnik prędkości potwora (finał o 23:55 i noc z modyfikatorem)
+function Round:SpeedScale(monsterId: string): number
+	local scale = if self.finale or self.phase == "hunt" then GameConfig.FINALE_SPEED else 1
+	if monsterId == "neighbor" then
+		scale *= NightConfig.Value(self.night, "neighborSpeed")
+	end
+	return scale
+end
+
+function Round:MonsterById(id: string)
+	for _, monster in self.monsters do
+		if monster.id == id and monster.alive then
+			return monster
+		end
+	end
+	return nil
+end
+
+-- Reżyser nocy: gdy przez dłuższą chwilę nic strasznego się nie dzieje, coś się wydarzy
+-- (gaśnie prąd na piętrze, kroki nad głową, Sąsiad idzie sprawdzić hałas, Mruczek się budzi)
+function Round:Director(dt: number)
+	if self.phase ~= "play" then
+		return
+	end
+	for _, monster in self.monsters do
+		if monster.mood == "alert" then
+			self.calm = 0
+		end
+	end
+	self.calm += dt
+	if self.calm < self.nextEvent then
+		return
+	end
+	local targets = self:Targets()
+	if #targets == 0 then
+		return
+	end
+	local target = targets[math.random(1, #targets)]
+	local position = target.root.CFrame.Position
+	local options = { "steps" }
+	if target.floor >= 1 then
+		table.insert(options, "blackout")
+	end
+	if target.floor == 1 then
+		table.insert(options, "neighbor")
+	elseif target.floor == 2 then
+		table.insert(options, "cat")
+	end
+	local kind = options[math.random(1, #options)]
+	if kind == "steps" then
+		-- Kroki nad sufitem albo za ścianą, tuż obok gracza
+		local offset = Vector3.new(math.random(-8, 8), if target.floor < 2 then BuildingBuilder.FLOOR_HEIGHT - 2 else 0, math.random(-8, 8))
+		self:Event(target.player, "sound", { key = "NeighborSteps", position = position + offset, duration = 4 })
+	elseif kind == "blackout" then
+		self:EventAll("blackout", { floor = target.floor, duration = math.random(5, 8), origin = self.origin })
+	elseif kind == "neighbor" then
+		local neighbor = self:MonsterById("neighbor")
+		if neighbor then
+			neighbor:Investigate(self:NearbyPatrolPoint(target.floor, position))
+		end
+	elseif kind == "cat" then
+		local cat = self:MonsterById("cat")
+		if cat then
+			cat:WakeTowards(self:NearbyPatrolPoint(target.floor, position))
+		end
+	end
+	self.calm = 0
+	if self.finale then
+		self.nextEvent = math.random(GameConfig.DIRECTOR_FINALE_MIN, GameConfig.DIRECTOR_FINALE_MAX)
+	else
+		self.nextEvent = math.random(GameConfig.DIRECTOR_CALM_MIN, GameConfig.DIRECTOR_CALM_MAX)
+	end
+end
+
+-- Punkt w korytarzu blisko gracza, ale nie na nim (potwór ma przejść obok, nie wpaść na gracza)
+function Round:NearbyPatrolPoint(floor: number, position: Vector3): Vector3
+	local best, bestDistance = nil, math.huge
+	for _, point in self.building.patrol[floor] or {} do
+		local distance = (point - position).Magnitude
+		if distance > 8 and distance < bestDistance then
+			best, bestDistance = point, distance
+		end
+	end
+	return best or position
+end
+
+-- "O włos!": potwór, który czegoś szuka albo goni, przeszedł tuż obok schowanego albo nieruchomego gracza
+function Round:CheckCloseCalls()
+	for _, monster in self.monsters do
+		if monster.mood == "alert" or monster.mood == "curious" then
+			for player, state in self.players do
+				local root = rootOf(player)
+				if state.status == "inside" and not state.finished and root and self.elapsed - state.lastCloseCall > GameConfig.CLOSE_CALL_COOLDOWN then
+					local position = root.CFrame.Position
+					local still = state.hidden ~= nil or Monster.SpeedOf(root) < GameConfig.MOVING_SPEED
+					if still and monster.target ~= player and math.abs(position.Y - 3 - monster.position.Y) < 6 and monster:DistanceTo(position) <= GameConfig.CLOSE_CALL_RADIUS then
+						state.closeCalls += 1
+						state.lastCloseCall = self.elapsed
+						self:Event(player, "closecall", { bonus = GameConfig.CLOSE_CALL_BONUS })
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Potwór zagląda do zajętej szafy: gracz w środku dostaje minigrę "wstrzymaj oddech"
+function Round:FindOccupiedWardrobe(position: Vector3, radius: number)
+	for _, wardrobe in self.building.wardrobes do
+		local player = wardrobe.occupant
+		if player and not self.breathChecks[player] and self.elapsed - (wardrobe.lastChecked or -math.huge) > GameConfig.WARDROBE_CHECK_COOLDOWN then
+			-- Świeżo schowany gracz ma chwilę spokoju
+			if self.elapsed - (wardrobe.enteredAt or 0) > 2 and (wardrobe.part.CFrame.Position - position).Magnitude <= radius then
+				return wardrobe
+			end
+		end
+	end
+	return nil
+end
+
+function Round:CheckWardrobe(wardrobe, monsterId: string): boolean
+	local player = wardrobe.occupant
+	if not player or self.breathChecks[player] then
+		return false
+	end
+	wardrobe.lastChecked = self.elapsed
+	self.breathChecks[player] = { deadline = self.elapsed + GameConfig.BREATH_TIME + 2, monster = monsterId }
+	self:Event(player, "breath", { duration = GameConfig.BREATH_TIME, monster = monsterId })
+	return true
+end
+
+-- Wynik minigry od klienta. Brak odpowiedzi w czasie = udało się (łagodnie dla słabego internetu).
+function Round:BreathResult(player: Player, success: boolean)
+	local check = self.breathChecks[player]
+	if not check then
+		return
+	end
+	self.breathChecks[player] = nil
+	local state = self.players[player]
+	if success then
+		state.closeCalls += 1
+		self:Event(player, "breathOk", { bonus = GameConfig.CLOSE_CALL_BONUS })
+	elseif state.hidden then
+		self:LeaveWardrobe(player)
+		self:Catch(player, check.monster)
+	end
+end
+
+function Round:CheckBreathTimeouts()
+	for player, check in self.breathChecks do
+		if self.elapsed > check.deadline then
+			self:BreathResult(player, true)
+		end
+	end
+end
+
+function Round:IsChecking(player: Player): boolean
+	return self.breathChecks[player] ~= nil
+end
+
+-- Zaplanowany pierwszy strach dla nowego gracza: na 1. piętrze podpowiedź "schowaj się!",
+-- a chwilę później Sąsiad przychodzi sprawdzić hałas. Gracz uczy się zasady, zanim zrobi się groźnie.
+function Round:Tutorial()
+	if self.phase ~= "play" then
+		return
+	end
+	for player, state in self.players do
+		local root = rootOf(player)
+		if state.newPlayer and state.status == "inside" and root then
+			if state.tutorial == nil and self:FloorOf(root.CFrame.Position) == 1 then
+				state.tutorial = "waiting"
+				state.tutorialAt = self.elapsed + 3
+			elseif state.tutorial == "waiting" and self.elapsed >= state.tutorialAt then
+				local neighbor = self:MonsterById("neighbor")
+				if neighbor and neighbor.state ~= "chase" then
+					state.tutorial = "hide"
+					state.tutorialAt = self.elapsed + 4
+					self:Event(player, "tutorial", { step = "hide" })
+				else
+					state.tutorial = "done"
+				end
+			elseif state.tutorial == "hide" and self.elapsed >= state.tutorialAt then
+				state.tutorial = "done"
+				local neighbor = self:MonsterById("neighbor")
+				if neighbor and neighbor.state ~= "chase" then
+					neighbor:Investigate(root.CFrame.Position - Vector3.new(0, 3, 0))
+				end
+			end
+		end
+	end
+end
+
+-- Szybki komunikat do drużyny ("Tutaj monety!", "Uciekaj!"...)
+function Round:QuickChat(player: Player, index: number)
+	local state = self.players[player]
+	local root = rootOf(player)
+	if not state or state.finished or not root or not GameConfig.QUICK_CHAT[index] then
+		return
+	end
+	if self.elapsed - state.lastChat < GameConfig.QUICK_CHAT_COOLDOWN then
+		return
+	end
+	state.lastChat = self.elapsed
+	self:EventAll("comms", { by = player.DisplayName, index = index, position = root.CFrame.Position + Vector3.new(0, 3, 0) })
+end
+
 -- Start i pętla -----------------------------------------------------------------------------------
 
 function Round:Start(teleport)
@@ -700,6 +930,7 @@ function Round:Start(teleport)
 			rent = self.rent,
 			duration = GameConfig.ROUND_DURATION,
 			players = #self.order,
+			night = self.night.id,
 		})
 	end
 
@@ -744,9 +975,19 @@ function Round:Tick(dt: number)
 	for _, monster in self.monsters do
 		monster:Update(dt)
 	end
+	self:CheckCloseCalls()
+	self:CheckBreathTimeouts()
+	self:Director(dt)
+	self:Tutorial()
 	-- Zegar
 	if self.phase == "play" then
 		self.timeLeft -= dt
+		if not self.finale and not self.rentPaid and self.timeLeft <= GameConfig.FINALE_TIME then
+			self.finale = true
+			self.nextEvent = math.min(self.nextEvent, self.calm + 4)
+			self:EventAll("finale", {})
+			self:ToastAll("⚠️ 23:55! Kamienica się budzi! Potwory są szybsze!", "bad")
+		end
 		if self.timeLeft <= 0 then
 			self.timeLeft = 0
 			self:Midnight()
@@ -799,6 +1040,11 @@ function Round:PushState()
 				floor = if root then self:FloorOf(root.CFrame.Position) else 0,
 				pingReady = state.status == "ghost" and self.elapsed - state.lastPing >= GameConfig.GHOST_PING_COOLDOWN,
 				team = team,
+				finale = self.finale,
+				night = self.night.id,
+				hearing = state.hearing,
+				closeCalls = state.closeCalls,
+				tutorial = state.tutorial,
 			})
 		end
 	end

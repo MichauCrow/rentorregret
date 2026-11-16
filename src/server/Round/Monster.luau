@@ -1,5 +1,6 @@
--- Wspólna podstawa potworów: model zakotwiczony (bez fizyki), ruch po ścieżce z PathfindingService
--- płynnie co klatkę, sprawdzanie widoczności gracza i łapanie. Zasady zachowania są w Monsters/*.
+-- Wspólna podstawa potworów: logika ruchu po ścieżce (PathfindingService), widoczność gracza i łapanie.
+-- Zasady zachowania są w Monsters/*. Płynny ruch i animacje rysuje u siebie każdy gracz
+-- (MonsterRenderer): serwer tylko publikuje położenie w atrybutach modelu (Pivot, Moving, Speed, Mood).
 local PathfindingService = game:GetService("PathfindingService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,6 +11,8 @@ local Monster = {}
 Monster.__index = Monster
 
 local EYE_HEIGHT = 5
+local PUBLISH_INTERVAL = 1 / 15 -- jak często serwer wysyła położenie potwora do graczy
+local SERVER_PIVOT_INTERVAL = 1 -- model na serwerze przesuwamy rzadko (wczytywanie świata u graczy)
 local WAYPOINT_REACHED = 0.6
 local TURN_SPEED = 10
 
@@ -36,12 +39,18 @@ function Monster.new(round, id: string, model: Model, position: Vector3)
 		AgentCanClimb = false,
 		WaypointSpacing = 4,
 	}
-	self.animated = {}
 	self.mood = nil
+	self.publishTimer = 0
+	self.serverPivotTimer = 0
 	model:SetAttribute("MonsterId", id)
 	model:SetAttribute("Hostile", false)
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	self.moodLabel = Monster.MoodBillboard(model)
-	model:PivotTo(CFrame.lookAt(position, position + self.look))
+	local start = CFrame.lookAt(position, position + self.look)
+	model:PivotTo(start)
+	model:SetAttribute("Pivot", start)
+	model:SetAttribute("Moving", false)
+	model:SetAttribute("Speed", 0)
 	model.Parent = round.building.model
 	self.heartbeat = RunService.Heartbeat:Connect(function(dt)
 		self:Step(dt)
@@ -83,14 +92,9 @@ function Monster:SetMood(mood: string?)
 	self.model:SetAttribute("Mood", mood)
 end
 
--- Animowana część: fn(t, base) zwraca położenie części względem stóp potwora (base = położenie wyjściowe)
-function Monster:Animate(partName: string, fn)
-	local root = self.model.PrimaryPart
-	for _, descendant in self.model:GetDescendants() do
-		if descendant:IsA("BasePart") and descendant.Name == partName then
-			table.insert(self.animated, { part = descendant, base = root.CFrame:ToObjectSpace(descendant.CFrame), fn = fn })
-		end
-	end
+-- Prędkość z uwzględnieniem finału o 23:55 i nocy z modyfikatorem
+function Monster:Speed(base: number): number
+	return base * self.round:SpeedScale(self.id)
 end
 
 -- Idź do punktu (liczy ścieżkę w tle). Zwraca od razu; IsMoving() mówi, czy jeszcze idzie.
@@ -158,14 +162,20 @@ function Monster:Step(dt: number)
 	if look.Magnitude < 0.01 then
 		look = Vector3.new(1, 0, 0)
 	end
-	-- Lekkie kołysanie przy chodzeniu, oddychanie w miejscu
-	local moving = self:IsMoving()
-	local bobY = if moving then math.abs(math.sin(self.bob * self.speed * 0.9)) * 0.35 else math.sin(self.bob * 2) * 0.08
-	local tilt = if moving then math.sin(self.bob * self.speed * 0.45) * math.rad(4) else 0
-	local pivot = CFrame.lookAt(self.position, self.position + look.Unit) * CFrame.new(0, bobY, 0) * CFrame.Angles(0, 0, tilt)
-	self.model:PivotTo(pivot)
-	for _, entry in self.animated do
-		entry.part.CFrame = pivot * entry.fn(self.bob, entry.base)
+	local pivot = CFrame.lookAt(self.position, self.position + look.Unit)
+	-- Do graczy idzie samo położenie; kołysanie i animacje dorysowuje MonsterRenderer
+	self.publishTimer += dt
+	if self.publishTimer >= PUBLISH_INTERVAL then
+		self.publishTimer = 0
+		local moving = self:IsMoving()
+		self.model:SetAttribute("Pivot", pivot)
+		self.model:SetAttribute("Moving", moving)
+		self.model:SetAttribute("Speed", if moving then self.speed else 0)
+	end
+	self.serverPivotTimer += dt
+	if self.serverPivotTimer >= SERVER_PIVOT_INTERVAL then
+		self.serverPivotTimer = 0
+		self.model:PivotTo(pivot)
 	end
 end
 

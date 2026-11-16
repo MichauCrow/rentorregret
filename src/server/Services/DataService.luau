@@ -22,7 +22,7 @@ local TEMPLATE = {
 	version = GameConfig.DATA_VERSION,
 	coins = GameConfig.STARTING_COINS,
 	upgrades = { flashlight = 1, shoes = 1, pockets = 1, stamina = 1 }, -- poziomy z ShopConfig
-	settings = { jumpscares = true, sound = 1, lang = "auto" }, -- sound: 1 = wszystko, 2 = bez muzyki, 3 = cisza; lang: auto | pl | en
+	settings = { jumpscares = true, sound = 1, lang = "auto", captions = true }, -- sound: 1 = wszystko, 2 = bez muzyki, 3 = cisza; lang: auto | pl | en
 	stats = {
 		rounds = 0,
 		rentsPaid = 0,

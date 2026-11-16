@@ -166,6 +166,11 @@ function LobbyBuilder.Build()
 	local label = Parts.Billboard(pad, "Stań na wycieraczce, żeby wejść!", Color3.fromRGB(150, 255, 160), 6, Vector2.new(360, 80))
 	label.Parent.MaxDistance = 140
 
+	-- Tablica "Dzisiejsza noc" (modyfikator dnia) obok wycieraczki
+	local nightBoard = Parts.Block(lobby, "NightBoard", Vector3.new(9, 4.5, 0.4), CFrame.lookAt(Vector3.new(13, 6, 36), Vector3.new(13, 6, 20)), Color3.fromRGB(40, 30, 70))
+	Parts.Block(lobby, "NightPost", Vector3.new(0.5, 4, 0.5), CFrame.new(13, 2, 36), COLORS.wood, Enum.Material.Wood)
+	local nightLabel = Parts.Sign(nightBoard, Enum.NormalId.Front, "🌙", Color3.fromRGB(255, 230, 150))
+
 	-- Punkt startowy graczy
 	local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
 	if spawn then
@@ -185,6 +190,7 @@ function LobbyBuilder.Build()
 		folder = lobby,
 		pad = pad,
 		padLabel = label,
+		nightLabel = nightLabel,
 		spawnCFrame = CFrame.lookAt(Vector3.new(0, 3, -20), Vector3.new(0, 3, 30)),
 	}
 end

@@ -8,11 +8,12 @@ return {
 		patrolSpeed = 7,
 		investigateSpeed = 13,
 		chaseSpeed = 17,
-		hearRadius = 38, -- mnożone przez Cichobiegi gracza
+		-- zasięg słuchu liczy moduł Noise (bieg, brzęk kieszeni, Cichobiegi)
 		seeRadius = 14, -- z bliska widzi poruszającego się gracza
 		chaseGiveUpRadius = 50,
 		lookAroundTime = 3, -- tyle stoi i nasłuchuje w miejscu hałasu
 		peekChance = 0.5, -- szansa, że w czasie patrolu zajrzy do mieszkania
+		wardrobeCheckChance = 0.5, -- szansa, że po nasłuchiwaniu zajrzy do pobliskiej zajętej szafy
 	},
 	Cat = { -- Mruczek, 2. piętro: idzie za światłem latarki
 		wanderSpeed = 6,
@@ -24,5 +25,6 @@ return {
 	Landlord = { -- Klucznik o północy
 		speed = 17,
 		spawnDelay = 3, -- chwila na przemianę, zanim ruszy
+		wardrobeCheckChance = 0.7,
 	},
 }

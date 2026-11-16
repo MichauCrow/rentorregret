@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local MonsterConfig = require(ReplicatedStorage.Shared.Config.MonsterConfig)
+local NightConfig = require(ReplicatedStorage.Shared.Config.NightConfig)
 local MonsterModels = require(ServerScriptService.World.MonsterModels)
 local Monster = require(script.Parent.Parent.Monster)
 
@@ -15,13 +16,16 @@ local FLOOR = 2
 local CFG = MonsterConfig.Cat
 local LOSE_INTEREST = 1.5
 local ALERT_COOLDOWN = 8
+local MOODS = { nap = "sleep", stalk = "alert" }
 
 function Cat.new(round, position: Vector3)
 	local self = Monster.new(round, "cat", MonsterModels.Cat(), position)
 	setmetatable(self, Cat)
 	self.home = position
 	self.state = "nap"
-	self.waitUntil = os.clock() + CFG.napTime
+	self.napTime = CFG.napTime * NightConfig.Value(round.night, "catNap")
+	self.lightRadius = CFG.lightRadius * NightConfig.Value(round.night, "catLight")
+	self.waitUntil = os.clock() + self.napTime
 	self.target = nil
 	self.lastLight = 0
 	self.sinceRepath = 0
@@ -33,23 +37,6 @@ function Cat.new(round, position: Vector3)
 		end
 	end
 	self.glow = self.model:FindFirstChild("EyeGlow", true)
-	-- Animacje: ogon macha (szybciej, gdy kot poluje), uszy czasem drgną
-	local tailHinge = CFrame.new(0, 3, 4.4)
-	self:Animate("Tail", function(t, base)
-		local speed, amount = 1.8, 0.3
-		if self.state == "stalk" then
-			speed, amount = 6, 0.5
-		elseif self.state == "nap" then
-			speed, amount = 0.8, 0.12
-		end
-		return tailHinge * CFrame.Angles(0, math.sin(t * speed) * amount, 0) * tailHinge:Inverse() * base
-	end)
-	for _, name in { "Ear", "EarInside" } do
-		self:Animate(name, function(t, base)
-			local twitch = if math.sin(t * 0.7) > 0.95 then math.sin(t * 40) * 0.25 else 0
-			return base * CFrame.Angles(0, 0, twitch)
-		end)
-	end
 	return self
 end
 
@@ -69,7 +56,7 @@ function Cat:FindLight()
 	for _, target in self.round:Targets() do
 		if target.floor == FLOOR and target.state.flashlight then
 			local distance = self:DistanceTo(target.root.CFrame.Position)
-			if distance <= CFG.lightRadius and distance < bestDistance and self:CanSee(target.root) then
+			if distance <= self.lightRadius and distance < bestDistance and self:CanSee(target.root) then
 				best, bestDistance = target, distance
 			end
 		end
@@ -77,7 +64,15 @@ function Cat:FindLight()
 	return best
 end
 
-local MOODS = { nap = "sleep", wander = nil, stalk = "alert" }
+-- Reżyser nocy: kot się budzi i idzie w stronę graczy (bez skradania: łapie tylko za światłem)
+function Cat:WakeTowards(position: Vector3)
+	if self.state == "stalk" then
+		return
+	end
+	self.state = "wander"
+	self.waitUntil = -1
+	self:MoveTo(position, self:Speed(CFG.wanderSpeed * 1.4))
+end
 
 function Cat:Update(dt: number)
 	if not self.alive then
@@ -105,7 +100,7 @@ function Cat:Update(dt: number)
 		self.sinceRepath += dt
 		if self.sinceRepath >= MonsterConfig.REPATH_INTERVAL then
 			self.sinceRepath = 0
-			self:MoveTo(light.root.CFrame.Position - Vector3.new(0, 3, 0), CFG.stalkSpeed)
+			self:MoveTo(light.root.CFrame.Position - Vector3.new(0, 3, 0), self:Speed(CFG.stalkSpeed))
 		end
 		return
 	end
@@ -115,6 +110,7 @@ function Cat:Update(dt: number)
 		if now - self.lastLight > LOSE_INTEREST then
 			self:SetExcited(false)
 			self.state = "wander"
+			self.target = nil
 			self:Stop()
 			self.waitUntil = now + 2
 		end
@@ -131,13 +127,13 @@ function Cat:Update(dt: number)
 			if self.waitUntil == 0 then
 				local building = self.round.building
 				local points = if math.random() < 0.3 then { self.home } else building.patrol[FLOOR]
-				self:MoveTo(points[math.random(1, #points)], CFG.wanderSpeed)
+				self:MoveTo(points[math.random(1, #points)], self:Speed(CFG.wanderSpeed))
 				self.waitUntil = -1
 			elseif self.waitUntil == -1 then
 				-- Doszedł: czasem drzemka, czasem dalej
 				if math.random() < 0.35 then
 					self.state = "nap"
-					self.waitUntil = now + CFG.napTime
+					self.waitUntil = now + self.napTime
 				else
 					self.waitUntil = now + 2
 				end

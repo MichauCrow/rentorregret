@@ -23,9 +23,11 @@ GameConfig.QUEUE_COUNTDOWN = 15
 GameConfig.QUEUE_FULL_COUNTDOWN = 5
 
 -- Runda
-GameConfig.ROUND_DURATION = 480 -- sekundy do północy (8 minut)
+GameConfig.ROUND_DURATION = 360 -- sekundy do północy (6 minut)
 GameConfig.CLOCK_START_HOUR = 20 -- zegar w grze idzie od 20:00 do 24:00
-GameConfig.HUNT_DURATION = 90 -- pościg Klucznika po północy, gdy czynsz nie jest zapłacony
+GameConfig.HUNT_DURATION = 75 -- pościg Klucznika po północy, gdy czynsz nie jest zapłacony
+GameConfig.FINALE_TIME = 45 -- ostatnie sekundy przed północą: "kamienica się budzi" (gdy czynsz niezapłacony)
+GameConfig.FINALE_SPEED = 1.2 -- potwory w finale są szybsze
 GameConfig.END_SCREEN_TIME = 6 -- tyle sekund gracz widzi podsumowanie przed powrotem do holu
 GameConfig.MAX_ROUNDS = 6 -- ile rozgrywek naraz na jednym serwerze (sloty kamienic)
 
@@ -41,6 +43,31 @@ GameConfig.DROPPED_BAG_TIME = 60 -- tyle sekund leży worek z monetami złapaneg
 -- Latarka (serwer pilnuje baterii)
 GameConfig.BATTERY_DRAIN = 1 -- jednostek na sekundę świecenia
 GameConfig.BATTERY_REGEN = 0.5 -- jednostek na sekundę, gdy latarka jest zgaszona
+
+-- Hałas (wspólne dla serwera i pierścienia hałasu u gracza, moduł Noise)
+GameConfig.MOVING_SPEED = 2 -- poniżej tej prędkości gracz stoi (cisza)
+GameConfig.NOISE_RUN_RADIUS = 38 -- z tylu studów słychać bieg
+GameConfig.NOISE_COIN_RADIUS = 22 -- z tylu studów słychać brzęk pełnych kieszeni (przy chodzeniu)
+GameConfig.JINGLE_FROM = 0.4 -- kieszenie brzęczą, gdy są zapełnione powyżej tej części
+
+-- Reżyser nocy (zdarzenia, gdy przez chwilę nic się nie dzieje)
+GameConfig.DIRECTOR_CALM_MIN = 22
+GameConfig.DIRECTOR_CALM_MAX = 40
+GameConfig.DIRECTOR_FINALE_MIN = 10
+GameConfig.DIRECTOR_FINALE_MAX = 16
+
+-- "O włos!": potwór przeszedł tuż obok schowanego albo nieruchomego gracza
+GameConfig.CLOSE_CALL_RADIUS = 7
+GameConfig.CLOSE_CALL_BONUS = 10
+GameConfig.CLOSE_CALL_COOLDOWN = 20
+
+-- Zaglądanie do szaf: minigra "wstrzymaj oddech"
+GameConfig.BREATH_TIME = 4 -- sekundy minigry
+GameConfig.WARDROBE_CHECK_COOLDOWN = 25 -- ta sama szafa nie jest sprawdzana częściej
+
+-- Szybkie komunikaty drużyny (klawisze 1-4 albo przycisk 📣)
+GameConfig.QUICK_CHAT = { "💰 Tutaj monety!", "🏃 Uciekaj!", "🔑 Mam klucz!", "🆘 Pomocy!" }
+GameConfig.QUICK_CHAT_COOLDOWN = 2
 
 -- Duszki
 GameConfig.GHOST_PING_COOLDOWN = 20

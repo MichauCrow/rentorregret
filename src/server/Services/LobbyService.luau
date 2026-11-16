@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
+local NightConfig = require(ReplicatedStorage.Shared.Config.NightConfig)
 local LobbyBuilder = require(ServerScriptService.World.LobbyBuilder)
 local RoundService = require(script.Parent.RoundService)
 
@@ -71,7 +72,19 @@ function LobbyService.Init()
 	RoundService.SetLobbySpawn(lobby.spawnCFrame)
 end
 
+local function updateNightBoard()
+	local night = NightConfig.Today()
+	lobby.nightLabel.Text = "DZISIEJSZA NOC\n" .. night.icon .. " " .. night.name .. "\n" .. night.description
+end
+
 function LobbyService.Start()
+	-- Noc zmienia się o północy UTC: odświeżamy tablicę co minutę
+	task.spawn(function()
+		while true do
+			pcall(updateNightBoard)
+			task.wait(60)
+		end
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(CHECK_INTERVAL)
