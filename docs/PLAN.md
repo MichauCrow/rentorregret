@@ -66,6 +66,12 @@ Lekki horror dla dzieci w kooperacji 1–4 graczy. Straszy, ale nie przeraża: n
   - szybkie komunikaty drużyny (📣 albo klawisze 1-4) ze znacznikiem w świecie,
   - płynny ruch potworów rysowany u gracza (serwer wysyła tylko położenie),
   - nowy HUD: zegar i czynsz na środku, jedna linijka stanu, paski tylko gdy potrzebne, przyciski na prawej krawędzi (z dala od skoku i czatu), strzałka celu na brzegu ekranu, zegary na ścianach, napisy dźwięków z kierunkiem, krótszy ekran startowy z obrazkami, rundy skrócone do 6 minut.
+- [x] **Przegląd wizualny** (sprawdzony na podglądzie poza Roblox, obrazki w `docs/podglad/`):
+  - potwory przebudowane: Sąsiad-lunatyk otwierający oczy w pościgu, pręgowany Mruczek z dzwoneczkiem, Klucznik o północy w stylu Pana Klucznika z holu (świecące okulary, wielki klucz); wszystkie mieszczą się w drzwiach,
+  - kamienica: fasada z oknami i portalem, podwórko z prawdziwą bramą wyjściową, czytelne schody, boazeria, framugi, otwarte drzwi, wiszące numery mieszkań, wycieraczki, jasne sufity, dywany, zasłony, obrazy; skrzynka na czynsz nie zasłania Klucznika,
+  - hol: portal, gzymsy, kominy, tablica „Dzisiejsza noc” na ścianie,
+  - interfejs: na telefonie przyciski wokół przycisku skoku (wygodne dla kciuka), większy HUD na małych ekranach, komunikaty nisko (środek ekranu wolny), monety wyskakują obok licznika kieszeni,
+  - test `tests/test_client` uruchamia cały kod interfejsu (54 sprawdzenia, komputer i telefon, PL i EN).
 - [ ] **Faza 3 — więcej kamienicy**: piwnica z **Pralką**, **Skarpetnik** (kradnie monety), bezpiecznik i proste zagadki, losowy układ mieszkań.
 - [ ] **Faza 4 — powody do powrotu**: zwierzaki-pomocnicy (pies węszy monety, sowa widzi w ciemności), nagroda dzienna, kody, ranking najszybszych rund, kosmetyki.
 - [ ] **Faza 5 — fabuła**: karteczki i rozmowy, czyli dlaczego Klucznik zmienia się o północy i jak złamać klątwę (zakończenie).

@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Podgląd świata i interfejsu gry bez Roblox Studio (przybliżony)",
   "dependencies": {
+    "@fontsource/fredoka-one": "^5.3.0",
     "three": "0.169.0"
   }
 }

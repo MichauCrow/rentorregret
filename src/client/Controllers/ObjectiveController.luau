@@ -1,4 +1,4 @@
--- Samouczek i cele: linia "🎯 Cel" pod linijką stanu i znacznik celu w świecie (skrzynka, brama, zamknięte
+-- Samouczek i cele: linia celu pod linijką stanu i znacznik celu w świecie (skrzynka, brama, zamknięte
 -- drzwi, szafa; w pierwszej rundzie także najbliższy mebel). Gdy cel jest poza ekranem, strzałka stoi na
 -- brzegu ekranu i pokazuje kierunek. Przy pierwszym wejściu na piętro duża podpowiedź, kto tam mieszka.
 -- Aktualizuje też zegary ścienne w kamienicy (ta sama godzina co w HUD).
@@ -217,10 +217,12 @@ local function update(round)
 	objectiveLabel.Visible = text ~= nil
 	if text and text ~= currentText then
 		currentText = text
-		objectiveLabel.Text = "🎯 " .. text
+		objectiveLabel.Text = text
 		objectiveLabel.TextColor3 = if forced and os.clock() < forced.untilTime then Color3.fromRGB(255, 140, 140) else Color3.fromRGB(255, 250, 220)
 	end
-	marker.Adornee = target
+	if target then
+		marker.Adornee = target
+	end
 	marker.Enabled = target ~= nil
 end
 

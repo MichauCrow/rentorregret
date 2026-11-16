@@ -20,8 +20,8 @@ local samples = {
 	"🏃 UCIEKAJ! 1:05",
 	"📍 Parter",
 	"📍 2. piętro",
-	"🎯 🔍 Szukaj dalej albo zanieś monety do BIURA (🎒 30).",
-	"🎯 💰 Wpłać jeszcze 25 (premia x1.5) albo uciekaj do bramy!",
+	"🔍 Szukaj dalej albo zanieś monety do BIURA (🎒 30).",
+	"💰 Wpłać jeszcze 25 (premia x1.5) albo uciekaj do bramy!",
 	"🕗 Masz czas do północy, żeby uzbierać 190 💰 czynszu!",
 	"Czynsz zapłacony w 3:12 🎉",
 	"Drużyna wpłaciła: 200 / 190 💰",
@@ -46,7 +46,7 @@ local samples = {
 	"😮 O włos: 2 razy (+20 💰)",
 	"😮 O WŁOS! +10 💰",
 	"😮‍💨 Uff! Udało się! +10 💰",
-	"🎯 🚪 Szybko! Schowaj się w szafie!",
+	"🚪 Szybko! Schowaj się w szafie!",
 	"Cichy Sąsiad Cię usłyszał i odprowadził do łóżka!\n👻 Jesteś teraz duszkiem.",
 	"JAK GRAĆ\n🔍 Przeszukuj meble i zbieraj monety\n💰 Zanieś je do skrzynki Klucznika\n🕛 Zapłać czynsz przed północą!\n🤫 Sąsiad słyszy bieganie\n🔦 Mruczek idzie za światłem\n🚪 Chowaj się w szafach",
 }
@@ -122,5 +122,5 @@ if #missing > 0 then
 	error("niepełne tłumaczenie")
 end
 print("Przykład: " .. Lang.ToEnglish("👻 Ala wskazuje: Komoda (świeci na niebiesko)"))
-print("Przykład: " .. Lang.ToEnglish("🎯 🔍 Szukaj dalej albo zanieś monety do BIURA (🎒 30)."))
+print("Przykład: " .. Lang.ToEnglish("🔍 Szukaj dalej albo zanieś monety do BIURA (🎒 30)."))
 print("TŁUMACZENIA KOMPLETNE")

@@ -55,18 +55,20 @@ local function fadeAndDestroy(instance: GuiObject, delay: number)
 	end)
 end
 
-local function popup(text: string, color: Color3)
+-- Wyskakujący napis. Monety pokazujemy obok licznika kieszeni u góry (nie zasłaniają środka ekranu),
+-- rzadkie większe napisy (low = true) nisko na środku.
+local function popup(text: string, color: Color3, low: boolean?)
 	local label = UIKit.label("Popup", {
-		Size = UDim2.fromOffset(300, 50),
-		Position = UDim2.fromScale(0.5 + (math.random() - 0.5) * 0.1, 0.6),
+		Size = UDim2.fromOffset(if low then 520 else 260, 50),
+		Position = if low then UDim2.fromScale(0.5, 0.6) else UDim2.new(0.5, 300 + math.random(-20, 20), 0, 118),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Text = text,
-		TextSize = 34,
+		TextSize = if low then 34 else 28,
 		TextColor3 = color,
 		ZIndex = 15,
 	})
 	label.Parent = gui
-	TweenService:Create(label, TweenInfo.new(1.2, Enum.EasingStyle.Quad), { Position = label.Position - UDim2.fromScale(0, 0.12) }):Play()
+	TweenService:Create(label, TweenInfo.new(1.2, Enum.EasingStyle.Quad), { Position = label.Position - UDim2.fromOffset(0, 34) }):Play()
 	fadeAndDestroy(label, 0.8)
 end
 
@@ -273,10 +275,10 @@ function FxController.Start()
 			shakeCamera(0.6, 2)
 			fadeAndDestroy(label, 2.5)
 		elseif kind == "closecall" then
-			popup("😮 O WŁOS! +" .. (data.bonus or 0) .. " 💰", Color3.fromRGB(255, 200, 150))
+			popup("😮 O WŁOS! +" .. (data.bonus or 0) .. " 💰", Color3.fromRGB(255, 200, 150), true)
 			SoundController.Play("Success", 1.2)
 		elseif kind == "breathOk" then
-			popup("😮‍💨 Uff! Udało się! +" .. (data.bonus or 0) .. " 💰", C.good)
+			popup("😮‍💨 Uff! Udało się! +" .. (data.bonus or 0) .. " 💰", C.good, true)
 			SoundController.Play("Success")
 		elseif kind == "comms" then
 			commsMarker(data)

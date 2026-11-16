@@ -8,9 +8,9 @@ local UIKit = {}
 
 UIKit.FONT = Enum.Font.FredokaOne
 -- Najmniejsza skala interfejsu: okna z przyciskami (sklep, minigry) nie mogą być za małe do klikania palcem,
--- stałe elementy ekranu (HUD, samouczek) mogą być mniejsze, żeby na telefonie było widać grę
+-- stałe elementy ekranu (HUD) są trochę mniejsze, żeby było widać grę, ale wciąż czytelne na telefonie
 UIKit.MIN_SCALE = 0.5
-UIKit.MIN_HUD_SCALE = 0.38
+UIKit.MIN_HUD_SCALE = 0.52
 UIKit.MAX_SCALE = 1.1
 
 -- Wspólna skala dla ekranu: projektujemy pod 1280x720, mniejsze ekrany pomniejszają proporcjonalnie.
@@ -18,7 +18,7 @@ UIKit.MAX_SCALE = 1.1
 function UIKit.ScaleFor(viewport: Vector2, kind: string?): number
 	local ratio = math.min(viewport.X / 1280, viewport.Y / 720)
 	if kind == "hud" then
-		return math.clamp(ratio * 0.8, UIKit.MIN_HUD_SCALE, UIKit.MAX_SCALE)
+		return math.clamp(ratio * 0.85, UIKit.MIN_HUD_SCALE, UIKit.MAX_SCALE)
 	end
 	return math.clamp(ratio * 0.92, UIKit.MIN_SCALE, UIKit.MAX_SCALE)
 end
@@ -213,7 +213,7 @@ end
 
 -- ScreenGui skalowany do ekranu (komputer, telefon, tablet)
 function UIKit.screenGui(name: string, displayOrder: number, kind: string?): ScreenGui
-	local gui = UIKit.create("ScreenGui", { Name = name, ResetOnSpawn = false, DisplayOrder = displayOrder })
+	local gui = UIKit.create("ScreenGui", { Name = name, ResetOnSpawn = false, DisplayOrder = displayOrder, ZIndexBehavior = Enum.ZIndexBehavior.Sibling })
 	local scale = UIKit.create("UIScale", {})
 	scale.Parent = gui
 	local function update()

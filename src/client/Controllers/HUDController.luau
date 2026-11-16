@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GameConfig = require(Shared:WaitForChild("Config"):WaitForChild("GameConfig"))
@@ -34,6 +35,7 @@ local openShop = nil
 local openSettings = nil
 local lastTick = nil
 local toastOrder = 0
+local touchGui = nil
 
 local function pill(name: string, size: UDim2, position: UDim2, anchor: Vector2?): Frame
 	return UIKit.create("Frame", {
@@ -205,6 +207,41 @@ local function roundButton(name: string, text: string, color: Color3, order: num
 	return button
 end
 
+-- Telefon i tablet: przyciski układają się wokół przycisku skoku Roblox (prawy dolny róg), w prawdziwych
+-- pikselach, żeby zawsze były wygodne dla kciuka: [📣][🔦] nad [🏃][skok]. Rozmiar i miejsce przycisku
+-- skoku liczymy tak samo jak Roblox (70 px na małych ekranach, 120 px na dużych).
+local function layoutTouch()
+	local camera = Workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Vector2.new(844, 390)
+	local jump = if math.min(viewport.X, viewport.Y) <= 500 then 70 else 120
+	local size = math.floor(jump * 0.86)
+	local gap = math.floor(jump * 0.16)
+	local inset = (jump - size) / 2
+	local jumpLeft = jump * 1.5 - 10 -- lewa krawędź przycisku skoku, licząc od prawej krawędzi ekranu
+	local jumpTop = jump + 20 -- górna krawędź przycisku skoku, licząc od dołu ekranu
+	local function place(button: GuiObject, column: number, row: number)
+		button.Size = UDim2.fromOffset(size, size)
+		button.Position = UDim2.new(1, -jumpLeft + inset - column * (size + gap), 1, -jumpTop + inset - row * (size + gap))
+		if button:IsA("TextButton") then
+			button.TextSize = math.floor(size * 0.5)
+		end
+	end
+	place(refs.sprintButton, 1, 0)
+	place(refs.flashButton, 0, 1)
+	place(refs.pingButton, 0, 1)
+	place(refs.commsButton, 1, 1)
+	-- Menu komunikatów otwiera się na lewo od przycisków
+	refs.commsMenu.AnchorPoint = Vector2.new(1, 1)
+	refs.commsMenu.Position = UDim2.new(1, -(jumpLeft - inset + size + gap * 2), 1, -60)
+	for _, child in refs.commsMenu:GetChildren() do
+		if child:IsA("TextButton") then
+			child.Size = UDim2.fromOffset(200, 42)
+			child.TextSize = 17
+		end
+	end
+	refs.commsMenu.Size = UDim2.fromOffset(200, 0)
+end
+
 local function buildRound()
 	local round = UIKit.create("Frame", { Name = "Round", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false })
 
@@ -245,14 +282,22 @@ local function buildRound()
 	team.Parent = round
 	refs.team = team
 
-	-- Prawa krawędź: przyciski w kolumnie (pod listą drużyny, nad przyciskiem skoku na telefonie)
-	local column = UIKit.create("Frame", {
-		Name = "Buttons",
-		Size = UDim2.fromOffset(84, 400),
-		Position = UDim2.new(1, -12, 0, 150),
-		AnchorPoint = Vector2.new(1, 0),
-		BackgroundTransparency = 1,
-	}, { UIKit.create("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	-- Przyciski: na komputerze kolumna przy prawej krawędzi, na telefonie wokół przycisku skoku (layoutTouch)
+	local touch = UserInputService.TouchEnabled
+	local column
+	if touch then
+		touchGui = UIKit.create("ScreenGui", { Name = "TouchButtons", ResetOnSpawn = false, DisplayOrder = 6, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, Enabled = false })
+		column = UIKit.create("Frame", { Name = "Buttons", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 })
+		column.Parent = touchGui
+	else
+		column = UIKit.create("Frame", {
+			Name = "Buttons",
+			Size = UDim2.fromOffset(84, 400),
+			Position = UDim2.new(1, -12, 0, 150),
+			AnchorPoint = Vector2.new(1, 0),
+			BackgroundTransparency = 1,
+		}, { UIKit.create("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	end
 	refs.flashButton = roundButton("Flashlight", "🔦", Color3.fromRGB(90, 80, 130), 1, column)
 	refs.flashButton.Activated:Connect(MovementController.ToggleFlashlight)
 	refs.sprintButton = roundButton("Sprint", "🏃", Color3.fromRGB(70, 130, 200), 2, column)
@@ -269,7 +314,9 @@ local function buildRound()
 	refs.pingButton.Activated:Connect(function()
 		ClientState.Remote("GhostPing"):FireServer()
 	end)
-	column.Parent = round
+	if not touch then
+		column.Parent = round
+	end
 
 	-- Menu szybkich komunikatów (obok przycisku 📣)
 	local comms = UIKit.create("Frame", {
@@ -288,8 +335,16 @@ local function buildRound()
 		end)
 		button.Parent = comms
 	end
-	comms.Parent = round
+	comms.Parent = if touch then column else round
 	refs.commsMenu = comms
+	if touchGui then
+		layoutTouch()
+		local camera = Workspace.CurrentCamera
+		if camera then
+			camera:GetPropertyChangedSignal("ViewportSize"):Connect(layoutTouch)
+		end
+		touchGui.Parent = gui.Parent
+	end
 
 	-- Dół na środku: paski (tylko gdy mają znaczenie), napisy dźwięków, podpowiedź klawiszy
 	local battery, batteryFill, batteryText = bar("Battery", UDim2.fromOffset(190, 24), UDim2.new(0.5, -100, 1, -30), Color3.fromRGB(255, 220, 80), round)
@@ -372,6 +427,9 @@ end
 local function renderRound(round)
 	refs.lobby.Visible = round == nil
 	refs.round.Visible = round ~= nil
+	if touchGui then
+		touchGui.Enabled = round ~= nil
+	end
 	if not round then
 		refs.commsMenu.Visible = false
 		return
@@ -448,11 +506,12 @@ function HUDController.Init()
 		BackgroundTransparency = 1,
 	}, { UIKit.create("UIListLayout", { Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }) })
 	toastHolder.Parent = gui
+	-- Duże komunikaty są w dolnej części ekranu: środek zostaje wolny (tam widać potwora)
 	refs.alert = UIKit.label("Alert", {
-		Size = UDim2.fromOffset(900, 80),
-		Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.fromOffset(820, 80),
+		Position = UDim2.fromScale(0.5, 0.7),
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		TextSize = 34,
+		TextSize = 30,
 		Visible = false,
 		ZIndex = 10,
 	})

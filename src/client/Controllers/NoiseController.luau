@@ -35,8 +35,8 @@ local function buildRing()
 	ring.Transparency = 1
 	ring.Size = Vector3.new(0.1, 1, 1)
 	ring.Color = QUIET
-	-- Pod kamerą: część istnieje tylko u tego gracza
-	ring.Parent = Workspace.CurrentCamera or Workspace
+	-- Część utworzona u gracza istnieje tylko u niego (nie idzie do serwera ani innych graczy)
+	ring.Parent = Workspace:WaitForChild("Rounds")
 end
 
 local function update(dt: number)

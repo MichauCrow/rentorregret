@@ -17,6 +17,7 @@ local MIN_REPEAT = { Warning = 2, Coins = 0.15, UIClick = 0.05 } -- nie powtarza
 local lastPlayed = {}
 local music = nil
 local musicIndex = 1
+local musicPlaying = false
 local inRound = false
 
 local function mode(): number
@@ -128,11 +129,14 @@ local function updateMusic()
 			music:Play()
 		end)
 		music:Play()
+		musicPlaying = true
 	elseif music then
-		if wanted and not music.IsPlaying then
+		if wanted and not musicPlaying then
 			music:Resume()
-		elseif not wanted and music.IsPlaying then
+			musicPlaying = true
+		elseif not wanted and musicPlaying then
 			music:Pause()
+			musicPlaying = false
 		end
 	end
 end
