@@ -95,6 +95,8 @@ for _, spot in round.building.spots do total += spot.coins; if spot.hasKey then 
 check(keys == 1, "dokładnie jeden klucz w meblach")
 check(math.abs(total - math.floor(round.rent * GameConfig.COINS_IN_BUILDING_RATIO)) < #round.building.spots, "monet w meblach ~" .. total)
 check(#round.monsters == 2, "Sąsiad i Mruczek na miejscu")
+for _ = 1, 30 do H.services.RunService.Heartbeat:Fire(1 / 30) end
+check(#round.monsters[1].animated > 0 and #round.monsters[2].animated > 0, "animowane części potworów działają")
 check(lastEvent(p1, "start") ~= nil, "gracz dostał zdarzenie start")
 
 -- 2. Ala zbiera i wpłaca aż do zapłaty czynszu --------------------------------------------------
@@ -142,6 +144,8 @@ local cat = round.monsters[2]
 put(p2, cat.position + V3.new(10, 0, 0))
 round:Tick(0.1)
 check(cat.state == "stalk", "Mruczek skrada się do światła")
+round:Tick(0.1)
+check(cat.model:GetAttribute("Hostile") == true and cat.moodLabel.Text == "❗", "Mruczek pokazuje ❗ i jest groźny")
 round:SetFlashlight(p2, false)
 cat.lastLight = os.clock() - 5
 round:Tick(0.1)

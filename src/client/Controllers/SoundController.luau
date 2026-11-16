@@ -1,5 +1,6 @@
 -- Dźwięki efektów i muzyka (tylko w holu; w kamienicy cisza buduje klimat).
 -- Tryb dźwięku jest w ustawieniach gracza: 1 = wszystko, 2 = bez muzyki, 3 = cisza.
+local ContentProvider = game:GetService("ContentProvider")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
@@ -56,6 +57,61 @@ function SoundController.Play(key: string, speed: number?)
 		end)
 	end
 	Debris:AddItem(sound, (maxLength or 6) + 1)
+end
+
+-- Dźwięk przypięty do części (3D: cichnie z odległością). Zwraca Sound albo nil, gdy brak ID.
+function SoundController.Attach(parent: Instance, key: string, looped: boolean, maxDistance: number?): Sound?
+	local soundId = AssetsConfig.Sounds[key]
+	if type(soundId) ~= "string" or soundId == "" then
+		return nil
+	end
+	local sound = Instance.new("Sound")
+	sound.Name = key
+	sound.SoundId = soundId
+	sound.Volume = if SoundController.SfxEnabled() then AssetsConfig.Volumes[key] or 0.5 else 0
+	sound.PlaybackSpeed = AssetsConfig.Pitch[key] or 1
+	sound.Looped = looped
+	sound.RollOffMode = Enum.RollOffMode.InverseTapered
+	sound.RollOffMinDistance = 6
+	sound.RollOffMaxDistance = maxDistance or 50
+	sound:SetAttribute("BaseVolume", AssetsConfig.Volumes[key] or 0.5)
+	sound.Parent = parent
+	sound:Play()
+	return sound
+end
+
+-- Tylko w Studio: raport w oknie Output, które dźwięki się wczytują
+function SoundController.CheckAll()
+	local list = {}
+	for key, id in AssetsConfig.Sounds do
+		if id ~= "" then
+			local sound = Instance.new("Sound")
+			sound.SoundId = id
+			list[key] = sound
+		end
+	end
+	for _, id in AssetsConfig.Music do
+		local sound = Instance.new("Sound")
+		sound.SoundId = id
+		list["Muzyka " .. id] = sound
+	end
+	local results = {}
+	for key, sound in list do
+		ContentProvider:PreloadAsync({ sound }, function(_, status)
+			results[key] = status
+		end)
+	end
+	local lines = { "[Dźwięki] raport:" }
+	for key, id in AssetsConfig.Sounds do
+		if id == "" then
+			table.insert(lines, "  ⬜ " .. key .. ": brak ID (dodaj w AssetsConfig)")
+		else
+			local status = results[key]
+			local ok = status == Enum.AssetFetchStatus.Success
+			table.insert(lines, (if ok then "  ✅ " else "  ❌ ") .. key .. (if ok then "" else ": nie wczytuje się (" .. tostring(status) .. ")"))
+		end
+	end
+	print(table.concat(lines, "\n"))
 end
 
 local function updateMusic()

@@ -33,6 +33,23 @@ function Cat.new(round, position: Vector3)
 		end
 	end
 	self.glow = self.model:FindFirstChild("EyeGlow", true)
+	-- Animacje: ogon macha (szybciej, gdy kot poluje), uszy czasem drgną
+	local tailHinge = CFrame.new(0, 3, 4.4)
+	self:Animate("Tail", function(t, base)
+		local speed, amount = 1.8, 0.3
+		if self.state == "stalk" then
+			speed, amount = 6, 0.5
+		elseif self.state == "nap" then
+			speed, amount = 0.8, 0.12
+		end
+		return tailHinge * CFrame.Angles(0, math.sin(t * speed) * amount, 0) * tailHinge:Inverse() * base
+	end)
+	for _, name in { "Ear", "EarInside" } do
+		self:Animate(name, function(t, base)
+			local twitch = if math.sin(t * 0.7) > 0.95 then math.sin(t * 40) * 0.25 else 0
+			return base * CFrame.Angles(0, 0, twitch)
+		end)
+	end
 	return self
 end
 
@@ -60,10 +77,13 @@ function Cat:FindLight()
 	return best
 end
 
+local MOODS = { nap = "sleep", wander = nil, stalk = "alert" }
+
 function Cat:Update(dt: number)
 	if not self.alive then
 		return
 	end
+	self:SetMood(MOODS[self.state])
 	-- Łapie tylko wtedy, gdy idzie za światłem (zasada musi być uczciwa: zgaszona latarka = bezpiecznie)
 	if self.state == "stalk" then
 		self:TryCatch(CFG.catchDistance)

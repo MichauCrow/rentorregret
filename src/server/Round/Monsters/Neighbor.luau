@@ -28,6 +28,22 @@ function Neighbor.new(round, position: Vector3)
 	self.lastSeen = 0
 	self.alerted = {}
 	self.sinceRepath = 0
+	-- Animacje: uszy strzygą, gdy nasłuchuje; płomień świecy drga; czubek szlafmycy się kiwa
+	self:Animate("Ear", function(t, base)
+		local listening = self.mood == "curious" or self.mood == "alert"
+		local speed = if listening then 22 else 2
+		local amount = if listening then 0.3 else 0.05
+		return base * CFrame.Angles(0, 0, math.sin(t * speed) * amount)
+	end)
+	self:Animate("Flame", function(t, base)
+		return base * CFrame.new(math.sin(t * 13) * 0.04, math.abs(math.sin(t * 9)) * 0.06, math.cos(t * 17) * 0.04)
+	end)
+	local capHinge = CFrame.new(0, 10.2, 0.1)
+	for _, name in { "NightcapTip", "NightcapPompom" } do
+		self:Animate(name, function(t, base)
+			return capHinge * CFrame.Angles(math.sin(t * 2.2) * 0.15, 0, math.sin(t * 1.7) * 0.12) * capHinge:Inverse() * base
+		end)
+	end
 	return self
 end
 
@@ -86,10 +102,13 @@ function Neighbor:StartChase(target)
 	self.sinceRepath = math.huge
 end
 
+local MOODS = { patrol = nil, investigate = "curious", lookAround = "curious", chase = "alert" }
+
 function Neighbor:Update(dt: number)
 	if not self.alive then
 		return
 	end
+	self:SetMood(MOODS[self.state])
 	-- Łapie tylko w pościgu: kto stoi nieruchomo albo idzie powoli, jest bezpieczny
 	if self.state == "chase" then
 		self:TryCatch()

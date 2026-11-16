@@ -36,12 +36,61 @@ function Monster.new(round, id: string, model: Model, position: Vector3)
 		AgentCanClimb = false,
 		WaypointSpacing = 4,
 	}
+	self.animated = {}
+	self.mood = nil
+	model:SetAttribute("MonsterId", id)
+	model:SetAttribute("Hostile", false)
+	self.moodLabel = Monster.MoodBillboard(model)
 	model:PivotTo(CFrame.lookAt(position, position + self.look))
 	model.Parent = round.building.model
 	self.heartbeat = RunService.Heartbeat:Connect(function(dt)
 		self:Step(dt)
 	end)
 	return self
+end
+
+-- Ikona nad głową (💤 ❓ ❗): dzieci od razu widzą, co potwór "myśli"
+function Monster.MoodBillboard(model: Model): TextLabel
+	local head = model:FindFirstChild("Head", true)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Mood"
+	billboard.Size = UDim2.fromOffset(70, 70)
+	billboard.StudsOffset = Vector3.new(0, 5.5, 0)
+	billboard.Adornee = if head and head:IsA("BasePart") then head else model.PrimaryPart
+	billboard.MaxDistance = 70
+	billboard.AlwaysOnTop = true
+	billboard.Parent = model
+	local label = Instance.new("TextLabel")
+	label.Name = "Icon"
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Font = Enum.Font.FredokaOne
+	label.Text = ""
+	label.Parent = billboard
+	return label
+end
+
+-- mood: "sleep" | "curious" | "alert" | nil (spokojny). alert = potwór goni (klient gra bicie serca)
+local MOOD_ICONS = { sleep = "💤", curious = "❓", alert = "❗" }
+function Monster:SetMood(mood: string?)
+	if self.mood == mood then
+		return
+	end
+	self.mood = mood
+	self.moodLabel.Text = MOOD_ICONS[mood or ""] or ""
+	self.model:SetAttribute("Hostile", mood == "alert")
+	self.model:SetAttribute("Mood", mood)
+end
+
+-- Animowana część: fn(t, base) zwraca położenie części względem stóp potwora (base = położenie wyjściowe)
+function Monster:Animate(partName: string, fn)
+	local root = self.model.PrimaryPart
+	for _, descendant in self.model:GetDescendants() do
+		if descendant:IsA("BasePart") and descendant.Name == partName then
+			table.insert(self.animated, { part = descendant, base = root.CFrame:ToObjectSpace(descendant.CFrame), fn = fn })
+		end
+	end
 end
 
 -- Idź do punktu (liczy ścieżkę w tle). Zwraca od razu; IsMoving() mówi, czy jeszcze idzie.
@@ -113,7 +162,11 @@ function Monster:Step(dt: number)
 	local moving = self:IsMoving()
 	local bobY = if moving then math.abs(math.sin(self.bob * self.speed * 0.9)) * 0.35 else math.sin(self.bob * 2) * 0.08
 	local tilt = if moving then math.sin(self.bob * self.speed * 0.45) * math.rad(4) else 0
-	self.model:PivotTo(CFrame.lookAt(self.position, self.position + look.Unit) * CFrame.new(0, bobY, 0) * CFrame.Angles(0, 0, tilt))
+	local pivot = CFrame.lookAt(self.position, self.position + look.Unit) * CFrame.new(0, bobY, 0) * CFrame.Angles(0, 0, tilt)
+	self.model:PivotTo(pivot)
+	for _, entry in self.animated do
+		entry.part.CFrame = pivot * entry.fn(self.bob, entry.base)
+	end
 end
 
 function Monster:EyePosition(): Vector3

@@ -205,8 +205,11 @@ function Round:SetupSpot(spot)
 			self:Event(player, "found", { amount = 0, position = spot.part.CFrame.Position })
 		end
 		spot.searched = true
+		spot.part:SetAttribute("Searched", true)
 		prompt:Destroy()
 	end)
+	prompt:SetAttribute("Kind", "search")
+	spot.part:SetAttribute("Spot", true)
 	spot.prompt = prompt
 end
 

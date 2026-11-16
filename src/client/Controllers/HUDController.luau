@@ -8,6 +8,7 @@ local UserInputService = game:GetService("UserInputService")
 local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Modules"):WaitForChild("Format"))
 local ClientState = require(script.Parent.ClientState)
 local MovementController = require(script.Parent.MovementController)
+local SoundController = require(script.Parent.SoundController)
 local UIKit = require(script.Parent.UIKit)
 
 local HUDController = {}
@@ -18,6 +19,7 @@ local refs = {}
 local toastHolder = nil
 local openShop = nil
 local openSettings = nil
+local lastTick = nil
 
 local STATUS_ICON = { inside = "🏠", ghost = "👻", escaped = "🏃", left = "🚪" }
 local FLOOR_NAME = { [0] = "Parter", [1] = "1. piętro", [2] = "2. piętro" }
@@ -162,6 +164,7 @@ local function buildRound()
 		BackgroundTransparency = 0.15,
 	}, { UIKit.corner(16), UIKit.border(C.stroke, 3) })
 	refs.clock = UIKit.label("Clock", { Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 4), Text = "🕗 20:00", TextSize = 32, TextColor3 = C.title })
+	UIKit.create("UIScale", {}).Parent = refs.clock
 	refs.clock.Parent = top
 	local _, rentFill, rentText = bar("Rent", UDim2.new(1, -24, 0, 34), UDim2.fromOffset(12, 48), C.good, top)
 	refs.rentFill, refs.rentText = rentFill, rentText
@@ -294,6 +297,14 @@ local function renderRound(round)
 	else
 		refs.clock.Text = "🕗 " .. round.clock
 		refs.clock.TextColor3 = if round.timeLeft <= 60 then C.warn else C.title
+		-- Ostatnia minuta: zegar tyka i pulsuje (widać to też bez dźwięku)
+		if round.phase == "play" and not round.rentPaid and round.timeLeft <= 60 and round.timeLeft ~= lastTick then
+			lastTick = round.timeLeft
+			SoundController.Play("ClockTick", if round.timeLeft <= 15 then 1.25 else 1)
+			local pulse = refs.clock:FindFirstChildOfClass("UIScale")
+			pulse.Scale = if round.timeLeft <= 15 then 1.3 else 1.15
+			TweenService:Create(pulse, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Scale = 1 }):Play()
+		end
 	end
 	if round.rentPaid then
 		setBar(refs.rentFill, 1)

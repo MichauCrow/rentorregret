@@ -21,6 +21,14 @@ function Landlord.new(round, position: Vector3)
 	self.lastSeen = 0
 	self.lastKnown = nil
 	self.sinceRepath = math.huge
+	-- Animacja: wielki klucz kołysze się w dłoni
+	local hand = CFrame.new(1.5, 6.3, -3.1)
+	for _, name in { "KeyShaft", "KeyBow", "KeyBit" } do
+		self:Animate(name, function(t, base)
+			return hand * CFrame.Angles(math.sin(t * 4) * 0.35, 0, 0) * hand:Inverse() * base
+		end)
+	end
+	self:SetMood("curious")
 	return self
 end
 
@@ -40,6 +48,7 @@ function Landlord:Update(dt: number)
 			best, bestDistance = target, distance
 		end
 	end
+	self:SetMood(if best or (self.lastKnown and now - self.lastSeen < MonsterConfig.LOSE_SIGHT_TIME * 2) then "alert" else "curious")
 	if best then
 		self.target = best.player
 		self.lastSeen = now

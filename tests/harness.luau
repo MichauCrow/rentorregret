@@ -7,7 +7,7 @@ local roblox = require("@lune/roblox")
 local H = {}
 H.root = process.cwd .. "src" -- uruchamiaj z głównego folderu repozytorium
 H.mounts = { ReplicatedStorage = { Shared = "shared" }, ServerScriptService = "server" }
-H.services = {} -- [nazwa] = obiekt podstawiony za usługę
+H.services = { CollectionService = { AddTag = function() end, GetTagged = function() return {} end } } -- [nazwa] = atrapa usługi
 H.overrides = {} -- [ścieżka pliku bez .luau] = gotowa wartość modułu
 
 local cache = {}

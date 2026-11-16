@@ -5,6 +5,7 @@
 -- Układ (współrzędne lokalne, origin = róg kamienicy na poziomie podłogi parteru):
 --   X 0..52 mieszkania i korytarz, X 52..64 klatka schodowa, Z 16..24 korytarz, Y piętra co 14.
 --   Pokoje: X 0..26 / 26..52, Z 0..16 (południe) / 24..40 (północ). Drzwi frontowe w ścianie X = 0.
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
@@ -443,6 +444,19 @@ function BuildingBuilder.Build(origin: Vector3, parent: Instance, seed: number)
 	-- Legowisko Mruczka przy schodach na 2. piętrze
 	local cushion = Parts.Deco(decor, "CatBed", Vector3.new(1.2, 7, 7), CFrame.new(building.catBed + Vector3.new(0, 0.6, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(170, 60, 90), Enum.Material.Fabric, Enum.PartType.Cylinder)
 	cushion.Name = "CatBed"
+
+	-- Lampy w środku migają u graczy (AmbienceController): zapisujemy jasność wyjściową i piętro
+	for _, descendant in decor:GetDescendants() do
+		if descendant:IsA("PointLight") and descendant.Parent and descendant.Parent.Name == "Lamp" then
+			local lamp = descendant.Parent :: BasePart
+			local y = lamp.CFrame.Position.Y - origin.Y
+			if y > 0 and lamp.CFrame.Position.X > origin.X then
+				descendant:SetAttribute("Base", descendant.Brightness)
+				descendant:SetAttribute("Floor", math.clamp(math.floor(y / FLOOR_HEIGHT), 0, FLOORS - 1))
+				CollectionService:AddTag(descendant, "Flicker")
+			end
+		end
+	end
 
 	model.Parent = parent
 	return building

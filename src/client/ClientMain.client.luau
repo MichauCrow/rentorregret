@@ -1,4 +1,6 @@
 -- Punkt startowy klienta: Init() wszystkich kontrolerów (budowa interfejsu), potem Start() (podpięcie zdarzeń).
+local RunService = game:GetService("RunService")
+
 local Controllers = script.Parent:WaitForChild("Controllers")
 
 local ORDER = {
@@ -7,6 +9,7 @@ local ORDER = {
 	"SoundController",
 	"LightingController",
 	"MovementController",
+	"AmbienceController",
 	"HUDController",
 	"FxController",
 	"ShopController",
@@ -36,4 +39,11 @@ for _, name in ORDER do
 			warn("[ClientMain] " .. name .. ".Start: " .. tostring(err))
 		end
 	end
+end
+
+-- W Studio: raport, które dźwięki z AssetsConfig się wczytują (okno Output)
+if RunService:IsStudio() then
+	task.delay(5, function()
+		pcall(modules.SoundController.CheckAll)
+	end)
 end
