@@ -24,14 +24,27 @@ local function track(model: Instance)
 		return
 	end
 	local parts = {}
-	for _, def in MonsterAnimations[id] or {} do
-		for _, descendant in model:GetDescendants() do
-			if descendant:IsA("BasePart") and descendant.Name == def.part then
-				table.insert(parts, { part = descendant, base = root.CFrame:ToObjectSpace(descendant.CFrame), fn = def.fn })
+	local alertParts = {}
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			for _, def in MonsterAnimations[id] or {} do
+				if descendant.Name == def.part then
+					local hinge = if def.hinge then model:GetAttribute("Hinge" .. def.hinge) else nil
+					table.insert(parts, {
+						part = descendant,
+						base = root.CFrame:ToObjectSpace(descendant.CFrame),
+						hinge = if typeof(hinge) == "Vector3" then CFrame.new(hinge) else nil,
+						fn = def.fn,
+					})
+				end
+			end
+			local alert = descendant:GetAttribute("Alert")
+			if alert then
+				table.insert(alertParts, { part = descendant, show = alert == "show" })
 			end
 		end
 	end
-	tracked[model] = { current = nil, t = math.random() * 10, parts = parts }
+	tracked[model] = { current = nil, t = math.random() * 10, parts = parts, alertParts = alertParts, alert = nil }
 	model.AncestryChanged:Connect(function()
 		if not model:IsDescendantOf(Workspace) then
 			tracked[model] = nil
@@ -58,13 +71,26 @@ local function render(dt: number)
 		local speed = model:GetAttribute("Speed") or 0
 		local t = entry.t
 		-- Kołysanie przy chodzeniu, oddychanie w miejscu
-		local bobY = if moving then math.abs(math.sin(t * speed * 0.9)) * 0.35 else math.sin(t * 2) * 0.08
+		local bobY = if moving then math.abs(math.sin(t * speed * 0.9)) * 0.3 else math.sin(t * 2) * 0.07
 		local tilt = if moving then math.sin(t * speed * 0.45) * math.rad(4) else 0
 		local pivot = entry.current * CFrame.new(0, bobY, 0) * CFrame.Angles(0, 0, tilt)
 		model:PivotTo(pivot)
 		local mood = model:GetAttribute("Mood")
 		for _, animated in entry.parts do
-			animated.part.CFrame = pivot * animated.fn(t, animated.base, mood)
+			local delta = animated.fn(t, mood)
+			if animated.hinge then
+				animated.part.CFrame = pivot * animated.hinge * delta * animated.hinge:Inverse() * animated.base
+			else
+				animated.part.CFrame = pivot * animated.base * delta
+			end
+		end
+		-- Części widoczne tylko w pościgu (otwarte oczy) albo tylko poza nim (zamknięte)
+		local alert = mood == "alert"
+		if entry.alert ~= alert then
+			entry.alert = alert
+			for _, item in entry.alertParts do
+				item.part.Transparency = if item.show == alert then 0 else 1
+			end
 		end
 	end
 end

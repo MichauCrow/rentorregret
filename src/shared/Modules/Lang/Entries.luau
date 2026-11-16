@@ -61,6 +61,8 @@ return {
 	{ "Regał ze słoikami", "Jar shelf" },
 	{ "Stół", "Table" },
 	{ "Pudła", "Boxes" },
+	{ "Skrzynia", "Chest" },
+	{ "PARTER", "GROUND FLOOR" },
 	{ "%s (zostało %d)", "%s (%d left)" },
 	{ "Schowaj się", "Hide" },
 	{ "Wyjdź", "Get out" },

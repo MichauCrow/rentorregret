@@ -144,4 +144,124 @@ H.env = {
 
 H.load = loadModule
 H.roblox = roblox
+
+-- Sygnał jak RBXScriptSignal (Connect / Once / Fire)
+function H.signal()
+	local s = { handlers = {} }
+	function s:Connect(fn)
+		local connection = { Connected = true }
+		function connection:Disconnect()
+			self.Connected = false
+		end
+		table.insert(self.handlers, { fn = fn, connection = connection })
+		return connection
+	end
+	function s:Once(fn)
+		local connection
+		connection = self:Connect(function(...)
+			connection:Disconnect()
+			fn(...)
+		end)
+		return connection
+	end
+	function s:Fire(...)
+		for _, handler in table.clone(self.handlers) do
+			if handler.connection.Connected then
+				handler.fn(...)
+			end
+		end
+	end
+	return s
+end
+
+-- Lune nie ma zdarzeń ani metod silnika na instancjach: dokładamy atrapy (zdarzenia to sygnały H.signal,
+-- które test może sam odpalić, np. H.event(button, "Activated"):Fire()).
+local signals = {}
+function H.event(instance, name: string)
+	local perInstance = signals[instance]
+	if not perInstance then
+		perInstance = {}
+		signals[instance] = perInstance
+	end
+	if not perInstance[name] then
+		perInstance[name] = H.signal()
+	end
+	return perInstance[name]
+end
+
+local engineInstalled = false
+function H.installEngine()
+	if engineInstalled then
+		return
+	end
+	engineInstalled = true
+	local EVENTS = {
+		Instance = { "Changed", "AncestryChanged", "DescendantAdded", "DescendantRemoving", "ChildAdded", "ChildRemoved", "Destroying" },
+		GuiObject = { "MouseEnter", "MouseLeave", "InputBegan", "InputEnded" },
+		GuiButton = { "Activated", "MouseButton1Down", "MouseButton1Up", "MouseButton1Click" },
+		Sound = { "Ended", "Played" },
+		ProximityPrompt = { "Triggered", "PromptButtonHoldBegan", "PromptButtonHoldEnded" },
+		BindableEvent = { "Event" },
+	}
+	for className, names in EVENTS do
+		for _, name in names do
+			roblox.implementProperty(className, name, function(instance)
+				return H.event(instance, name)
+			end)
+		end
+	end
+	roblox.implementMethod("Instance", "WaitForChild", function(self, name)
+		return self:FindFirstChild(name)
+	end)
+	roblox.implementMethod("Instance", "GetPropertyChangedSignal", function(self, property)
+		return H.event(self, "Changed:" .. property)
+	end)
+	roblox.implementMethod("BindableEvent", "Fire", function(self, ...)
+		H.event(self, "Event"):Fire(...)
+	end)
+	for _, method in { "Play", "Pause", "Resume", "Stop" } do
+		roblox.implementMethod("Sound", method, function() end)
+	end
+	local function parts(model)
+		local list = {}
+		for _, descendant in model:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				table.insert(list, descendant)
+			end
+		end
+		return list
+	end
+	roblox.implementMethod("Model", "PivotTo", function(model, target)
+		local primary = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or parts(model)[1]
+		if not primary then
+			return
+		end
+		local delta = target * primary.CFrame:Inverse()
+		for _, part in parts(model) do
+			part.CFrame = delta * part.CFrame
+		end
+	end)
+	roblox.implementMethod("Model", "GetPivot", function(model)
+		local primary = model.PrimaryPart or parts(model)[1]
+		return if primary then primary.CFrame else roblox.CFrame.new()
+	end)
+	-- TweenService: zmiana stosowana od razu
+	H.services.TweenService = H.services.TweenService or {
+		Create = function(_, instance, _, props)
+			local completed = H.signal()
+			return {
+				Completed = completed,
+				Play = function()
+					for key, value in props do
+						instance[key] = value
+					end
+					completed:Fire()
+				end,
+			}
+		end,
+	}
+	H.services.Debris = H.services.Debris or { AddItem = function() end }
+	H.env.NumberSequenceKeypoint = roblox.NumberSequenceKeypoint
+end
+
 return H

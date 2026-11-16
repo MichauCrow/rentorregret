@@ -275,17 +275,27 @@ check(Noise.Radius(10, 50, 50, 1) == GameConfig.NOISE_COIN_RADIUS, "pełne kiesz
 check(Noise.Radius(20, 0, 50, 1) == GameConfig.NOISE_RUN_RADIUS, "bieg słychać z daleka")
 check(Noise.Radius(20, 0, 50, 0.45) < GameConfig.NOISE_RUN_RADIUS * 0.5, "Cichobiegi zmniejszają hałas")
 local MonsterAnimations = H.load(H.root .. "/shared/Modules/MonsterAnimations")
+local MonsterModels = H.load(H.root .. "/server/World/MonsterModels")
 local animCount = 0
-for _, defs in MonsterAnimations do
-	for _, def in defs do
+for id, build in { neighbor = MonsterModels.Neighbor, cat = MonsterModels.Cat, landlord = MonsterModels.Landlord } do
+	local model = build()
+	local top = 0
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then top = math.max(top, d.CFrame.Position.Y) end
+	end
+	assert(top <= 10, id .. " nie mieści się w drzwiach: " .. top)
+	for _, def in MonsterAnimations[id] do
+		assert(model:FindFirstChild(def.part, true), id .. ": brak części " .. def.part)
+		if def.hinge then
+			assert(typeof(model:GetAttribute("Hinge" .. def.hinge)) == "Vector3", id .. ": brak zawiasu " .. def.hinge)
+		end
 		for _, mood in { "alert", "curious", "sleep", nil } do
-			local result = def.fn(1.234, CF.new(1, 2, 3), mood)
-			assert(typeof(result) == "CFrame", def.part)
+			assert(typeof(def.fn(1.234, mood)) == "CFrame", def.part)
 		end
 		animCount += 1
 	end
 end
-check(animCount >= 9, "animacje potworów liczą się bez błędów (" .. animCount .. ")")
+check(animCount >= 12, "animacje potworów: części i zawiasy istnieją, potwory mieszczą się w drzwiach (" .. animCount .. ")")
 
 print("\nWSZYSTKIE TESTY PRZESZŁY")
 round:Destroy()

@@ -1,0 +1,9 @@
+{
+  "name": "rentorregret-preview",
+  "private": true,
+  "type": "module",
+  "description": "Podgląd świata i interfejsu gry bez Roblox Studio (przybliżony)",
+  "dependencies": {
+    "three": "0.169.0"
+  }
+}

@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Podgląd świata</title>
+<style>html,body{margin:0;height:100%;background:#1b1626;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+</head>
+<body>
+<script type="module">
+// Przybliżony podgląd części Roblox w three.js. Konwencje Roblox: walec ma oś wzdłuż X, kula = najmniejszy
+// wymiar, SpecialMesh Sphere wypełnia rozmiar części, przód części to -Z.
+import * as THREE from "three";
+
+const params = new URLSearchParams(location.search);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.localClippingEnabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.2, 3000);
+const world = new THREE.Group();
+scene.add(world);
+const lightsGroup = new THREE.Group();
+scene.add(lightsGroup);
+let sceneLights = [];
+
+const FACES = { Front: [0, 0, -1], Back: [0, 0, 1], Right: [1, 0, 0], Left: [-1, 0, 0], Top: [0, 1, 0], Bottom: [0, -1, 0] };
+
+function textCanvas(text, width, height, color, bg) {
+  const canvas = document.createElement("canvas");
+  const scale = Math.min(64, 2048 / Math.max(width, height));
+  canvas.width = Math.max(32, Math.round(width * scale));
+  canvas.height = Math.max(32, Math.round(height * scale));
+  const ctx = canvas.getContext("2d");
+  if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+  const lines = String(text).split("\n");
+  let size = canvas.height / lines.length * 0.8;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (;;) {
+    ctx.font = `bold ${size}px "DejaVu Sans", "Noto Color Emoji", sans-serif`;
+    const widest = Math.max(...lines.map((l) => ctx.measureText(l).width));
+    if (widest <= canvas.width * 0.94 || size < 6) break;
+    size *= 0.92;
+  }
+  ctx.lineWidth = size * 0.14; ctx.strokeStyle = "#14101e"; ctx.fillStyle = color;
+  lines.forEach((line, i) => {
+    const y = canvas.height / 2 + (i - (lines.length - 1) / 2) * size * 1.15;
+    ctx.strokeText(line, canvas.width / 2, y); ctx.fillText(line, canvas.width / 2, y);
+  });
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+const list = (x) => (Array.isArray(x) ? x : []);
+const css = (c) => `rgb(${c.map((v) => Math.round(v * 255)).join(",")})`;
+
+function faceQuaternion(normal) {
+  const z = new THREE.Vector3(...normal);
+  const up = Math.abs(z.y) > 0.9 ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+  const x = new THREE.Vector3().crossVectors(up, z).normalize();
+  const y = new THREE.Vector3().crossVectors(z, x);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+}
+
+function buildPart(p) {
+  const group = new THREE.Group();
+  const c = p.cf;
+  group.matrixAutoUpdate = false;
+  group.matrix.set(c[3], c[4], c[5], c[0], c[6], c[7], c[8], c[1], c[9], c[10], c[11], c[2], 0, 0, 0, 1);
+  group.userData = p;
+  const [sx, sy, sz] = p.s;
+  if (p.t < 0.99 || p.alert) {
+    let geometry, scale = [1, 1, 1];
+    if (p.mesh && p.mesh.type === "Sphere") {
+      geometry = new THREE.SphereGeometry(0.5, 24, 16); scale = [sx * p.mesh.scale[0], sy * p.mesh.scale[1], sz * p.mesh.scale[2]];
+    } else if (p.mesh && p.mesh.type === "Head") {
+      geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 24); scale = [sx / 2 * p.mesh.scale[0], sy * p.mesh.scale[1], sz * p.mesh.scale[2]];
+    } else if (p.sh === "Cylinder") {
+      const d = Math.min(sy, sz);
+      geometry = new THREE.CylinderGeometry(d / 2, d / 2, sx, 24); geometry.rotateZ(Math.PI / 2);
+    } else if (p.sh === "Ball") {
+      geometry = new THREE.SphereGeometry(Math.min(sx, sy, sz) / 2, 24, 16);
+    } else {
+      geometry = new THREE.BoxGeometry(sx, sy, sz);
+    }
+    const color = new THREE.Color(p.col[0], p.col[1], p.col[2]);
+    const transparent = (!p.alert && p.t > 0.01) || p.m === "Glass";
+    const shownT = p.alert ? 0 : p.t;
+    const opacity = Math.max(0.12, 1 - shownT) * (p.m === "Glass" && shownT < 0.01 ? 0.75 : 1);
+    const material = p.m === "Neon"
+      ? new THREE.MeshBasicMaterial({ color, transparent, opacity })
+      : new THREE.MeshLambertMaterial({ color, transparent, opacity });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.scale.set(...scale);
+    group.add(mesh);
+    if (p.decal) { // klasyczna buzia na głowie
+      const size = Math.min(sx / 2, sy) * (p.mesh ? p.mesh.scale[0] : 1);
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshBasicMaterial({ map: textCanvas("• •\n‿", 1, 1, "#222"), transparent: true }));
+      const n = FACES[p.decal]; const depth = (p.mesh ? p.mesh.scale[2] : 1) * sz / 2 + 0.02;
+      plane.position.set(n[0] * depth, n[1] * depth, n[2] * depth); plane.quaternion.copy(faceQuaternion(n));
+      group.add(plane);
+    }
+  }
+  for (const sign of list(p.signs)) {
+    const n = FACES[sign.face];
+    const horizontal = Math.abs(n[0]) > 0.5 ? sz : sx;
+    const vertical = Math.abs(n[1]) > 0.5 ? sz : sy;
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(horizontal, vertical), new THREE.MeshBasicMaterial({ map: textCanvas(sign.text, horizontal, vertical, css(sign.color), sign.bg ? css(sign.bg) : null), transparent: true, side: THREE.FrontSide }));
+    const depth = (Math.abs(n[0]) * sx + Math.abs(n[1]) * sy + Math.abs(n[2]) * sz) / 2 + 0.03;
+    plane.position.set(n[0] * depth, n[1] * depth, n[2] * depth); plane.quaternion.copy(faceQuaternion(n));
+    group.add(plane);
+  }
+  for (const board of list(p.boards)) {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: textCanvas(board.text, 8, 2, css(board.color)), transparent: true }));
+    sprite.scale.set(8, 2, 1); sprite.position.set(0, board.offset || 3, 0); sprite.userData.board = true;
+    group.add(sprite);
+  }
+  for (const light of list(p.lights)) sceneLights.push({ ...light, position: new THREE.Vector3(c[0], c[1], c[2]) });
+  return group;
+}
+
+window.loadScene = async (name) => {
+  world.clear(); sceneLights = [];
+  const data = await (await fetch(`./out/${name}.json`)).json();
+  for (const part of data.parts) world.add(buildPart(part));
+  window.sceneData = data;
+  return data.parts.length;
+};
+
+// view: { pos, target, fov, mode: "clay" | "night", clipAbove, hide: [nazwy], boards: bool, bg }
+window.setView = (view) => {
+  camera.fov = view.fov || 70; camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  camera.position.set(...view.pos); camera.lookAt(...view.target);
+  renderer.clippingPlanes = view.clipAbove !== undefined ? [new THREE.Plane(new THREE.Vector3(0, -1, 0), view.clipAbove)] : [];
+  const hide = new Set(view.hide || []);
+  world.children.forEach((g) => {
+    const alert = g.userData.alert;
+    g.visible = !hide.has(g.userData.n) && (!alert || (alert === "show") === !!view.alert);
+    g.children.forEach((child) => { if (child.userData.board) child.visible = view.boards !== false; });
+  });
+  lightsGroup.clear();
+  if (view.mode === "night") {
+    scene.background = new THREE.Color(view.bg || "#05040a");
+    lightsGroup.add(new THREE.AmbientLight(0x8890c0, view.ambient ?? 0.35));
+    const near = sceneLights.map((l) => ({ l, d: l.position.distanceTo(camera.position) })).sort((a, b) => a.d - b.d).slice(0, 24);
+    for (const { l } of near) {
+      const light = new THREE.PointLight(new THREE.Color(...l.color), l.brightness * 60, l.range * 1.2, 1.6);
+      light.position.copy(l.position); lightsGroup.add(light);
+    }
+  } else {
+    scene.background = new THREE.Color(view.bg || "#8fa6c8");
+    lightsGroup.add(new THREE.AmbientLight(0xffffff, 1.5));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-0.5, 1, -0.7); lightsGroup.add(sun);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.7); fill.position.set(0.6, 0.3, 0.8); lightsGroup.add(fill);
+  }
+  renderer.render(scene, camera);
+};
+window.ready = true;
+</script>
+</body>
+</html>

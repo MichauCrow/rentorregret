@@ -28,6 +28,11 @@ end
 
 -- Ozdoba bez kolizji i bez trafień promieni (nie przeszkadza w chodzeniu ani w widoczności potworów)
 function Parts.Deco(parent: Instance, name: string, size: Vector3, cframe: CFrame, color: Color3, material: Enum.Material?, shape: Enum.PartType?): Part
+	if shape == Enum.PartType.Ball then
+		-- Kula w Roblox ma wszystkie wymiary równe: bierzemy najmniejszy, żeby wynik nie zależał od silnika
+		local d = math.min(size.X, size.Y, size.Z)
+		size = Vector3.new(d, d, d)
+	end
 	local p = Parts.Block(parent, name, size, cframe, color, material)
 	if shape then
 		p.Shape = shape
@@ -97,9 +102,23 @@ function Parts.Billboard(adornee: BasePart, text: string, color: Color3?, offset
 	return label
 end
 
--- Ciepła lampka (żarówka + PointLight)
-function Parts.Lamp(parent: Instance, position: Vector3, brightness: number, range: number, color: Color3?): PointLight
-	local bulb = Parts.Deco(parent, "Lamp", Vector3.new(1, 0.6, 1), CFrame.new(position), Color3.fromRGB(255, 225, 160), Enum.Material.Neon, Enum.PartType.Ball)
+-- Elipsoida wypełniająca podany rozmiar (ozdoba bez kolizji)
+function Parts.Blob(parent: Instance, name: string, size: Vector3, cframe: CFrame, color: Color3, material: Enum.Material?): Part
+	local p = Parts.Deco(parent, name, size, cframe, color, material)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+
+-- Lampa sufitowa: kabel, klosz i żarówka z PointLight. position = punkt, w którym wisi żarówka.
+-- Część z żarówką nazywa się "Lamp" (po niej klient rozpoznaje lampy, które migają).
+function Parts.Lamp(parent: Instance, position: Vector3, brightness: number, range: number, color: Color3?, shade: boolean?): PointLight
+	local bulb = Parts.Deco(parent, "Lamp", Vector3.new(0.7, 0.7, 0.7), CFrame.new(position), Color3.fromRGB(255, 225, 160), Enum.Material.Neon, Enum.PartType.Ball)
+	if shade ~= false then
+		Parts.Deco(parent, "LampCord", Vector3.new(0.08, 0.6, 0.08), CFrame.new(position + Vector3.new(0, 0.6, 0)), Color3.fromRGB(30, 28, 30))
+		Parts.Deco(parent, "LampShade", Vector3.new(0.25, 1.7, 1.7), CFrame.new(position + Vector3.new(0, 0.32, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(70, 95, 80), Enum.Material.Metal, Enum.PartType.Cylinder)
+	end
 	local light = Instance.new("PointLight")
 	light.Brightness = brightness
 	light.Range = range

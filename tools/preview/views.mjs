@@ -1,0 +1,42 @@
+// Widoki do podglądu. Kamienica w eksporcie stoi rogiem w (0, 0.5, 0): X 0..64, Z 0..40, piętra co 14.
+const F = 14;
+const eye = 5.5; // wysokość oczu gracza nad podłogą
+
+export const VIEWS = [
+  // Potwory: przód (-Z), bok, stan pościgu
+  { name: "monster_neighbor_front", scene: "neighbor", pos: [-5, 6.5, -12], target: [0, 5, -0.5], fov: 50 },
+  { name: "monster_neighbor_side", scene: "neighbor", pos: [12, 6, 2], target: [0, 5, -0.8], fov: 50 },
+  { name: "monster_neighbor_alert", scene: "neighbor", pos: [-2.5, 7.6, -7], target: [0, 7.2, 0], fov: 45, alert: true },
+  { name: "monster_cat_front", scene: "cat", pos: [-7, 5, -14], target: [0, 3.5, 0], fov: 50 },
+  { name: "monster_cat_side", scene: "cat", pos: [15, 6, 2], target: [0, 3.5, 0.5], fov: 50 },
+  { name: "monster_landlord_front", scene: "landlord", pos: [-6, 7, -14], target: [0, 5.2, -1.5], fov: 50 },
+  { name: "monster_landlord_side", scene: "landlord", pos: [14, 6.5, -1], target: [0, 5.2, -2], fov: 50 },
+  { name: "monster_landlord_face", scene: "landlord", pos: [-1.8, 8.4, -6], target: [0, 7.6, -0.5], fov: 45 },
+  { name: "keyman_front", scene: "keyman", pos: [-4, 5, -10], target: [0, 3.8, 0], fov: 50 },
+  // Hol
+  { name: "lobby_spawn", scene: "lobby", pos: [0, 6, -26], target: [0, 12, 40], fov: 70, bg: "#6b5a8a" },
+  { name: "lobby_pad", scene: "lobby", pos: [10, 7, 14], target: [-2, 5, 40], fov: 70, bg: "#6b5a8a" },
+  { name: "lobby_kiosk", scene: "lobby", pos: [-8, 6, 22], target: [-24, 4, 24], fov: 70, bg: "#6b5a8a" },
+  { name: "lobby_top", scene: "lobby", pos: [0, 90, -20], target: [0, 0, 12], fov: 60, boards: false, bg: "#6b5a8a" },
+  // Kamienica: podwórko i fasada, rzuty pięter bez sufitów, widoki z oczu gracza
+  { name: "building_facade", scene: "building", pos: [-31, 7, 5], target: [0, 17, 24], fov: 75, bg: "#2a2440" },
+  { name: "building_gate", scene: "building", pos: [-3, eye, 20], target: [-32, 6, 20], fov: 75, bg: "#2a2440" },
+  { name: "building_cut_f0", scene: "building", pos: [22, 60, -8], target: [22, 0, 19], fov: 60, clipAbove: 9, boards: false },
+  { name: "building_cut_f1", scene: "building", pos: [22, 60 + F, -8], target: [22, F, 19], fov: 60, clipAbove: F + 9, boards: false },
+  { name: "building_cut_f2", scene: "building", pos: [22, 60 + 2 * F, -8], target: [22, 2 * F, 19], fov: 60, clipAbove: 2 * F + 9, boards: false },
+  { name: "eye_corridor_f0", scene: "building", pos: [4, eye, 20], target: [50, 5, 20], fov: 70 },
+  { name: "eye_office", scene: "building", pos: [13, eye, 15.5], target: [13, 4, 4], fov: 80 },
+  { name: "eye_corridor_f1", scene: "building", pos: [4, F + eye, 20], target: [50, F + 5, 20], fov: 70 },
+  { name: "eye_corridor_f1_night", scene: "building", pos: [4, F + eye, 20], target: [50, F + 5, 20], fov: 70, mode: "night" },
+  { name: "eye_door_f1", scene: "building", pos: [22, F + eye, 21.5], target: [38, F + 6, 17], fov: 70 },
+  { name: "eye_clock_f1", scene: "building", pos: [20, F + eye, 17.2], target: [20, F + 8.6, 23.4], fov: 60 },
+  { name: "eye_apartment_f1", scene: "building", pos: [13, F + eye, 25.5], target: [13, F + 3, 40], fov: 85 },
+  { name: "eye_apartment_f1_night", scene: "building", pos: [13, F + eye, 25.5], target: [13, F + 3, 40], fov: 85, mode: "night" },
+  { name: "eye_apartment_back_f1", scene: "building", pos: [20, F + eye, 38], target: [10, F + 4, 24], fov: 85 },
+  { name: "eye_stairs_f0", scene: "building", pos: [48, eye, 21], target: [56, 4.5, 11], fov: 80 },
+  { name: "eye_stairs_up_f0", scene: "building", pos: [55.25, eye, 21], target: [55.25, 6, 4], fov: 75 },
+  { name: "eye_floor_sign_f1", scene: "building", pos: [30, F + eye, 20], target: [64, F + 8, 20], fov: 60 },
+  { name: "eye_nook_f0", scene: "building", pos: [56, eye, 25.5], target: [59, 2, 38], fov: 80 },
+  { name: "eye_cat_f2", scene: "building", pos: [54, 2 * F + eye, 22], target: [58, 2 * F + 3, 33], fov: 80 },
+  { name: "eye_top_hole_f2", scene: "building", pos: [53.5, 2 * F + eye + 1, 19], target: [60, 2 * F, 9], fov: 80 },
+];

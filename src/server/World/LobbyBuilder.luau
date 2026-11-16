@@ -32,7 +32,7 @@ end
 
 local function lampPost(parent: Instance, position: Vector3)
 	Parts.Block(parent, "LampPost", Vector3.new(0.6, 10, 0.6), CFrame.new(position + Vector3.new(0, 5, 0)), COLORS.metal, Enum.Material.Metal)
-	Parts.Lamp(parent, position + Vector3.new(0, 10.3, 0), 1.5, 32, Color3.fromRGB(255, 205, 140))
+	Parts.Lamp(parent, position + Vector3.new(0, 10.4, 0), 1.5, 32, Color3.fromRGB(255, 205, 140), false)
 end
 
 local function bench(parent: Instance, cframe: CFrame)
@@ -59,23 +59,46 @@ local function facade(parent: Instance)
 				local center = Vector3.new(i * 9, 8 + floor * 9, z - 0.15)
 				local lit = rng:NextNumber() < 0.45
 				Parts.Deco(parent, "WindowFrame", Vector3.new(5, 6, 0.3), CFrame.new(center), COLORS.trim)
+				Parts.Deco(parent, "WindowSill", Vector3.new(5.8, 0.4, 0.8), CFrame.new(center + Vector3.new(0, -3.2, -0.25)), COLORS.trim)
+				Parts.Deco(parent, "WindowBar", Vector3.new(0.25, 5, 0.42), CFrame.new(center - Vector3.new(0, 0, 0.06)), COLORS.trim)
 				local glass = Parts.Deco(parent, "Window", Vector3.new(4, 5, 0.35), CFrame.new(center - Vector3.new(0, 0, 0.05)), if lit then COLORS.windowLit else COLORS.windowDark, if lit then Enum.Material.Neon else Enum.Material.Glass)
 				if floor == 2 and i == 2 then
 					glass.Color = COLORS.windowDark
 					glass.Material = Enum.Material.Glass
 					for _, dx in { -0.7, 0.7 } do
-						Parts.Deco(parent, "CatEye", Vector3.new(0.6, 0.6, 0.2), CFrame.new(center + Vector3.new(dx, 0.4, -0.3)), Color3.fromRGB(255, 240, 80), Enum.Material.Neon, Enum.PartType.Ball)
+						Parts.Deco(parent, "CatEye", Vector3.new(0.5, 0.5, 0.5), CFrame.new(center + Vector3.new(dx, 0.4, -0.3)), Color3.fromRGB(255, 240, 80), Enum.Material.Neon, Enum.PartType.Ball)
 					end
 				end
 			end
 		end
 	end
-	-- Wielkie drzwi i schodki
+	-- Gzymsy między piętrami, kominy i krzaki pod ścianą
+	for _, y in { 12.6, 21.6 } do
+		Parts.Deco(parent, "FloorCornice", Vector3.new(68.6, 0.7, 0.7), CFrame.new(0, y, z - 0.3), COLORS.trim)
+	end
+	for _, x in { -22, 20 } do
+		Parts.Block(parent, "Chimney", Vector3.new(3, 6, 2.4), CFrame.new(x, 46, z + 2), COLORS.facade, Enum.Material.Brick)
+		Parts.Deco(parent, "ChimneyTop", Vector3.new(3.6, 0.6, 3), CFrame.new(x, 49.2, z + 2), COLORS.roof, Enum.Material.Slate)
+	end
+	for _, x in { -27, -18, 18, 27 } do
+		Parts.Blob(parent, "Bush", Vector3.new(5, 2.8, 3), CFrame.new(x, 1.2, z - 2), COLORS.leaves, Enum.Material.Grass)
+	end
+	-- Wielkie drzwi z portalem, daszkiem i schodkami
 	Parts.Block(parent, "BigDoor", Vector3.new(8, 12, 0.6), CFrame.new(0, 6, z - 0.3), COLORS.door, Enum.Material.Wood)
-	Parts.Deco(parent, "DoorKnob", Vector3.new(0.6, 0.6, 0.4), CFrame.new(2.8, 6, z - 0.8), Color3.fromRGB(255, 200, 60), Enum.Material.Metal, Enum.PartType.Ball)
+	for _, x in { -2, 2 } do
+		for _, y in { 3.2, 8.8 } do
+			Parts.Deco(parent, "DoorPanel", Vector3.new(3, 4.6, 0.12), CFrame.new(x, y, z - 0.64), COLORS.wood, Enum.Material.Wood)
+		end
+	end
+	Parts.Deco(parent, "DoorKnob", Vector3.new(0.6, 0.6, 0.6), CFrame.new(0.9, 6, z - 0.9), Color3.fromRGB(255, 200, 60), Enum.Material.Metal, Enum.PartType.Ball)
+	for _, x in { -4.5, 4.5 } do
+		Parts.Deco(parent, "PortalJamb", Vector3.new(1, 12.6, 1), CFrame.new(x, 6.3, z - 0.4), COLORS.trim)
+	end
+	Parts.Deco(parent, "PortalHead", Vector3.new(10.4, 1.2, 1.2), CFrame.new(0, 12.9, z - 0.5), COLORS.trim)
+	Parts.Deco(parent, "Canopy", Vector3.new(12, 0.4, 3.4), CFrame.new(0, 14, z - 1.7) * CFrame.Angles(math.rad(-8), 0, 0), COLORS.roof, Enum.Material.Slate)
 	Parts.Block(parent, "Step", Vector3.new(14, 0.6, 4), CFrame.new(0, 0.3, z - 2), COLORS.trim, Enum.Material.Concrete)
-	Parts.Lamp(parent, Vector3.new(-5.5, 10, z - 0.8), 1.4, 24)
-	Parts.Lamp(parent, Vector3.new(5.5, 10, z - 0.8), 1.4, 24)
+	Parts.Lamp(parent, Vector3.new(-5.8, 10, z - 0.9), 1.4, 24, nil, false)
+	Parts.Lamp(parent, Vector3.new(5.8, 10, z - 0.9), 1.4, 24, nil, false)
 end
 
 local function kiosk(parent: Instance, position: Vector3): BasePart
@@ -90,6 +113,13 @@ local function kiosk(parent: Instance, position: Vector3): BasePart
 	-- Towar na ladzie: latarki i buty
 	Parts.Deco(parent, "Flashlight", Vector3.new(1.6, 0.6, 0.6), base * CFrame.new(-2, 3.5, -2.2), Color3.fromRGB(255, 220, 60), Enum.Material.Metal, Enum.PartType.Cylinder)
 	Parts.Deco(parent, "Shoe", Vector3.new(1.4, 0.7, 0.7), base * CFrame.new(1.5, 3.55, -2.2), Color3.fromRGB(240, 240, 255))
+	-- Półka z towarem na tylnej ścianie: plecak, butelka, latarki
+	Parts.Deco(parent, "KioskShelf", Vector3.new(6.6, 0.25, 1.2), base * CFrame.new(0, 5.2, 2.1), COLORS.wood, Enum.Material.Wood)
+	Parts.Deco(parent, "Backpack", Vector3.new(1.4, 1.6, 0.8), base * CFrame.new(-2.2, 6.1, 2.1), Color3.fromRGB(210, 70, 70), Enum.Material.Fabric)
+	Parts.Deco(parent, "Bottle", Vector3.new(1.3, 0.6, 0.6), base * CFrame.new(-0.4, 5.98, 2.1) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(90, 170, 240), Enum.Material.Glass, Enum.PartType.Cylinder)
+	for i = 0, 1 do
+		Parts.Deco(parent, "Flashlight", Vector3.new(1.2, 0.5, 0.5), base * CFrame.new(1.2 + i * 1.1, 5.93, 2.1) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(255, 220, 60), Enum.Material.Metal, Enum.PartType.Cylinder)
+	end
 	local sign = Parts.Deco(parent, "KioskSign", Vector3.new(8, 2, 0.3), base * CFrame.new(0, 9.8, -0.4), Color3.fromRGB(40, 30, 60))
 	Parts.Sign(sign, Enum.NormalId.Front, "🛒 SKLEPIK", Color3.fromRGB(255, 220, 90))
 	Parts.Lamp(parent, (base * CFrame.new(0, 7.5, -1)).Position, 1.2, 16)
@@ -149,7 +179,7 @@ function LobbyBuilder.Build()
 	end
 	bench(lobby, CFrame.lookAt(Vector3.new(16, 0, 0), Vector3.new(0, 0, 0)))
 	bench(lobby, CFrame.lookAt(Vector3.new(-16, 0, -4), Vector3.new(0, 0, -4)))
-	howToBoard(lobby, CFrame.lookAt(Vector3.new(12, 0, 24), Vector3.new(0, 0, 12)))
+	howToBoard(lobby, CFrame.lookAt(Vector3.new(23, 0, 20), Vector3.new(0, 0, -12)))
 	kiosk(lobby, Vector3.new(-24, 0, 24))
 
 	-- Pan Klucznik przy drzwiach (w holu jest miły)
@@ -166,9 +196,9 @@ function LobbyBuilder.Build()
 	local label = Parts.Billboard(pad, "Stań na wycieraczce, żeby wejść!", Color3.fromRGB(150, 255, 160), 6, Vector2.new(360, 80))
 	label.Parent.MaxDistance = 140
 
-	-- Tablica "Dzisiejsza noc" (modyfikator dnia) obok wycieraczki
-	local nightBoard = Parts.Block(lobby, "NightBoard", Vector3.new(9, 4.5, 0.4), CFrame.lookAt(Vector3.new(13, 6, 36), Vector3.new(13, 6, 20)), Color3.fromRGB(40, 30, 70))
-	Parts.Block(lobby, "NightPost", Vector3.new(0.5, 4, 0.5), CFrame.new(13, 2, 36), COLORS.wood, Enum.Material.Wood)
+	-- Tablica "Dzisiejsza noc" (modyfikator dnia) na ścianie obok drzwi
+	local nightBoard = Parts.Block(lobby, "NightBoard", Vector3.new(9, 4.6, 0.4), CFrame.lookAt(Vector3.new(11.2, 6.4, 45.75), Vector3.new(11.2, 6.4, 30)), Color3.fromRGB(40, 30, 70))
+	Parts.Deco(lobby, "NightBoardFrame", Vector3.new(9.6, 5.2, 0.3), CFrame.new(11.2, 6.4, 45.82), COLORS.trim)
 	local nightLabel = Parts.Sign(nightBoard, Enum.NormalId.Front, "🌙", Color3.fromRGB(255, 230, 150))
 
 	-- Punkt startowy graczy
