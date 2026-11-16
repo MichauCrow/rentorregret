@@ -1,10 +1,9 @@
 -- ProximityPrompt ze sprawdzaniem po stronie serwera: czas przytrzymania i odległość gracza.
 -- onTriggered(player) jest wołane tylko wtedy, gdy oba warunki są spełnione.
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local JobsConfig = require(ReplicatedStorage.Shared.Config.JobsConfig)
-
 local HoldPrompt = {}
+
+-- Serwer przyjmuje przytrzymanie, jeśli trwało co najmniej taką część HoldDuration (opóźnienia sieci)
+local HOLD_TOLERANCE = 0.8
 
 -- options: action, object, hold (s), activation (zasięg podpowiedzi), maxDistance (serwer),
 -- opcjonalnie onHoldBegan(player) / onHoldEnded(player): np. animacja i dźwięk w trakcie przytrzymania
@@ -37,7 +36,7 @@ function HoldPrompt.Create(parent: Instance, options, onTriggered): ProximityPro
 	prompt.Triggered:Connect(function(player)
 		local started = holdStarts[player]
 		holdStarts[player] = nil
-		if hold > 0 and (not started or os.clock() - started < hold * JobsConfig.HOLD_TOLERANCE) then
+		if hold > 0 and (not started or os.clock() - started < hold * HOLD_TOLERANCE) then
 			return
 		end
 		local character = player.Character

@@ -1,36 +1,35 @@
--- Dźwięki interfejsu i muzyka w tle. Przycisk 🔊 przełącza: wszystko / bez muzyki / cisza.
--- Dźwięki są tylko u gracza (2D), niczego nie zmieniają w grze.
+-- Dźwięki efektów i muzyka (tylko w holu; w kamienicy cisza buduje klimat).
+-- Tryb dźwięku jest w ustawieniach gracza: 1 = wszystko, 2 = bez muzyki, 3 = cisza.
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local AssetsConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("AssetsConfig"))
+local ClientState = require(script.Parent:WaitForChild("ClientState"))
 local UIKit = require(script.Parent:WaitForChild("UIKit"))
 
 local SoundController = {}
 
-local MODES = {
-	{ icon = "🔊", music = true, sfx = true },
-	{ icon = "🎵", music = false, sfx = true },
-	{ icon = "🔇", music = false, sfx = false },
-}
 local MIN_REPEAT = { Warning = 2, Coins = 0.15, UIClick = 0.05 } -- nie powtarzaj szybciej niż (s)
 
-local modeIndex = 1
 local lastPlayed = {}
 local music = nil
 local musicIndex = 1
-local toggleButton = nil
+local inRound = false
 
--- Czy efekty dźwiękowe są włączone (używa też CleanFxController)
-function SoundController.SfxEnabled(): boolean
-	return MODES[modeIndex].sfx
+local function mode(): number
+	local profile = ClientState.profile
+	return if profile then profile.settings.sound or 1 else 1
 end
 
--- speed: opcjonalna wysokość dźwięku (np. rosnąca przy kolejnych gwiazdkach)
+function SoundController.SfxEnabled(): boolean
+	return mode() < 3
+end
+
+-- speed: opcjonalna wysokość dźwięku
 function SoundController.Play(key: string, speed: number?)
-	if not MODES[modeIndex].sfx then
+	if not SoundController.SfxEnabled() then
 		return
 	end
 	local soundId = AssetsConfig.Sounds[key]
@@ -59,49 +58,26 @@ function SoundController.Play(key: string, speed: number?)
 	Debris:AddItem(sound, (maxLength or 6) + 1)
 end
 
-local function startMusic()
-	if music or #AssetsConfig.Music == 0 then
-		return
-	end
-	music = Instance.new("Sound")
-	music.Name = "BackgroundMusic"
-	music.Volume = AssetsConfig.Volumes.Music or 0.2
-	music.SoundId = AssetsConfig.Music[musicIndex]
-	music.Parent = SoundService
-	music.Ended:Connect(function()
-		musicIndex = musicIndex % #AssetsConfig.Music + 1
+local function updateMusic()
+	local wanted = mode() == 1 and not inRound and #AssetsConfig.Music > 0
+	if wanted and not music then
+		music = Instance.new("Sound")
+		music.Name = "BackgroundMusic"
+		music.Volume = AssetsConfig.Volumes.Music or 0.2
 		music.SoundId = AssetsConfig.Music[musicIndex]
+		music.Parent = SoundService
+		music.Ended:Connect(function()
+			musicIndex = musicIndex % #AssetsConfig.Music + 1
+			music.SoundId = AssetsConfig.Music[musicIndex]
+			music:Play()
+		end)
 		music:Play()
-	end)
-	music:Play()
-end
-
-local function applyMode()
-	local mode = MODES[modeIndex]
-	if toggleButton then
-		toggleButton.Text = mode.icon
-	end
-	if mode.music then
-		startMusic()
-		if music and not music.IsPlaying then
-			music:Resume()
-		end
 	elseif music then
-		music:Pause()
-	end
-end
-
--- Reakcje na komunikaty serwera (rodzaj i treść toastu)
-function SoundController.OnNotify(text: any, kind: any)
-	if type(text) ~= "string" then
-		return
-	end
-	if text:find("Czynsz zapłacony", 1, true) or text:find("Udało się w dogrywce", 1, true) then
-		SoundController.Play("RentPaid")
-	elseif text:find("🏅", 1, true) or text:find("🎉", 1, true) or text:find("⭐ Zlecenie wykonane", 1, true) then
-		SoundController.Play("Success")
-	elseif kind == "warn" or kind == "bad" then
-		SoundController.Play("Warning")
+		if wanted and not music.IsPlaying then
+			music:Resume()
+		elseif not wanted and music.IsPlaying then
+			music:Pause()
+		end
 	end
 end
 
@@ -109,20 +85,14 @@ function SoundController.Init()
 	UIKit.SetPressSound(function()
 		SoundController.Play("UIClick")
 	end)
+end
 
-	-- Mały przycisk obok kluczy (ten sam układ i skala co HUD)
-	local gui = UIKit.screenGui("SoundUI", 1, "hud")
-	toggleButton = UIKit.button("Sound", MODES[1].icon, UIKit.COLORS.panel, {
-		Size = UDim2.fromOffset(48, 44),
-		Position = UDim2.fromOffset(160, 128),
-		TextSize = 24,
-	})
-	toggleButton.Activated:Connect(function()
-		modeIndex = modeIndex % #MODES + 1
-		applyMode()
+function SoundController.Start()
+	ClientState.OnProfile(updateMusic)
+	ClientState.OnRound(function(round)
+		inRound = round ~= nil
+		updateMusic()
 	end)
-	toggleButton.Parent = gui
-	applyMode()
 end
 
 return SoundController

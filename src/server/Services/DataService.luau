@@ -21,60 +21,19 @@ local SHUTDOWN_TIMEOUT = 25
 local TEMPLATE = {
 	version = GameConfig.DATA_VERSION,
 	coins = GameConfig.STARTING_COINS,
-	tokens = 0,
-	month = 1,
-	monthElapsed = 0,
-	highestMonth = 1,
-	stage = 1,
-	debt = 0,
-	warnings = 0,
-	pledged = {},
-	landlordMood = 50,
-	apartment = {
-		tier = 1,
-		initialized = false,
-		cleanliness = 100,
-		functionality = 100,
-		comfort = 0,
-		score = 0,
-		dirt = {},
-		nextDirtId = 1,
-		failures = {},
-		furniture = {},
-		rooms = 0, -- dobudowane piętra (pokoje na górze)
-		paint = {}, -- [pokój] = { c = nr koloru, f = nr wykończenia }
-	},
-	pets = {}, -- { id, species, name, home }
-	nextPetId = 1,
-	inventory = {},
-	equipment = {},
-	cosmetics = {}, -- [id kosmetyku] = true
-	equipped = {}, -- [rodzaj] = id kosmetyku
-	jobs = {},
+	upgrades = { flashlight = 1, shoes = 1, pockets = 1, stamina = 1 }, -- poziomy z ShopConfig
+	settings = { jumpscares = true, sound = 1 }, -- sound: 1 = wszystko, 2 = bez muzyki, 3 = cisza
 	stats = {
-		monthsPaid = 0,
-		onTimeStreak = 0,
-		totalEarned = 0,
-		helped = 0,
-		cleaned = 0,
-		threeStarStreak = 0,
-		nextShiftBonus = false,
-		rareDone = 0,
+		rounds = 0,
+		rentsPaid = 0,
+		escapes = 0,
+		caught = 0,
+		coinsFound = 0,
+		bestTime = 0, -- najszybsza zapłata czynszu (sekundy), 0 = jeszcze nigdy
 	},
-	monthly = { helperCoins = 0, rareOffered = 0, failures = 0, events = 0 }, -- liczniki zerowane co miesiąc
-	achievements = {},
-	secrets = {},
-	daily = { lastDay = 0, calendarIndex = 0, questDay = 0, quests = {} },
-	weekly = { week = 0, challenges = {}, stats = { earned = 0, cleaned = 0, monthsPaid = 0 } },
-	settings = { music = true, sfx = true },
-	tutorial = { step = 0, done = false },
-	receipts = {},
-	level = 1, -- poziom gracza (XpService)
-	xp = 0, -- XP zebrane na obecnym poziomie
-	xpInit = false, -- jednorazowe XP za postęp sprzed systemu poziomów
-	wheel = { day = 0, bonus = 0, total = 0 }, -- koło nagród: dzień darmowego obrotu, obroty z poziomów
-	playtime = { day = 0, seconds = 0, claimed = 0 }, -- prezenty za czas gry: czas gry dzisiaj, odebrane (bity)
-	codes = {}, -- [id kodu] = true, wykorzystane kody nagród
+	tutorialDone = false,
+	codes = {}, -- [id kodu] = true
+	receipts = {}, -- zakupy za Robux (na przyszłość)
 }
 
 local store = nil

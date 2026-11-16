@@ -3,39 +3,14 @@
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Services = ServerScriptService:WaitForChild("Services")
-local World = ServerScriptService:WaitForChild("World")
-
-require(World:WaitForChild("MapBuilder")).Build()
 
 local ORDER = {
 	"RemoteService",
 	"DataService",
-	"StateService",
-	"EconomyService",
-	"ApartmentService",
-	"CleaningService",
-	"MonthService",
-	"JobService",
-	"LandlordService",
-	"RareContractService",
-	"FailureService",
-	"EventService",
-	"CosmeticsService",
+	"PlayerStateService",
 	"ShopService",
-	"PetService",
-	"RentalService",
-	"HomeService",
-	"RoommateService",
-	"AchievementService",
-	"ProgressService",
-	"GoldenHourService",
-	"XpService",
-	"WheelService",
-	"GiftService",
-	"CodeService",
-	"TutorialService",
-	"LeaderboardService",
-	"DebugService",
+	"RoundService",
+	"LobbyService",
 }
 
 local modules = {}
@@ -57,4 +32,4 @@ for _, name in ORDER do
 	end
 end
 
-print("[Main] RENT OR REGRET: serwer gotowy")
+print("[Main] RENT OR REGRET: PÓŁNOC — serwer gotowy")
