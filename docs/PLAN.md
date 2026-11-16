@@ -49,7 +49,13 @@ Lekki horror dla dzieci w kooperacji 1–4 graczy. Straszy, ale nie przeraża: n
 ## Fazy
 - [x] **Faza 0 — fundament**: gałąź `polnoc`, usunięcie starej rozgrywki, nowy zapis danych (osobny magazyn `RoR_Polnoc_v1`).
 - [x] **Faza 1 — pierwsza grywalna wersja** (kod gotowy i przetestowany w symulacji Lune; czeka na test w Studio): hol, kamienica (parter + 2 piętra), rundy 1–4 graczy, monety i czynsz, klucz i zamknięte mieszkanie, szafy, duszki, Cichy Sąsiad, Mruczek, Klucznik o północy, sklep z 4 ulepszeniami, ustawienia (jumpscare'y, dźwięk), obsługa telefonu.
-- [ ] **Faza 2 — klimat**: dźwięki (kroki, mruczenie, zegar), migające lampy, animacje potworów, samouczek w pierwszej rundzie, wersja angielska.
+- [x] **Faza 2 — klimat** (kod gotowy, czeka na test w Studio):
+  - potwory: animacje (uszy, ogon, płomień świecy, klucz) i ikony nad głową 💤 ❓ ❗,
+  - migające lampy (na 2. piętrze często, a przy potworze mocno), bicie serca i ciemne brzegi ekranu w czasie pościgu,
+  - tykający i pulsujący zegar w ostatniej minucie, dźwięki 3D potworów, raport dźwięków w Studio (okno Output),
+  - cel w HUD („🎯 …”) ze strzałką nad celem, a w pierwszej rundzie także nad najbliższym meblem; podpowiedź przy pierwszym wejściu na piętro,
+  - wersja angielska: język z konta Roblox albo z ustawień (auto / PL / EN), test pokrycia tłumaczeń.
+  - **Do zrobienia przez Ciebie:** wybrać w Toolboxie dźwięki z pustym ID w `AssetsConfig` (zegar, bicie serca, mruczenie, klucze, szum nocy, „buu!”).
 - [ ] **Faza 3 — więcej kamienicy**: piwnica z **Pralką**, **Skarpetnik** (kradnie monety), bezpiecznik i proste zagadki, losowy układ mieszkań.
 - [ ] **Faza 4 — powody do powrotu**: zwierzaki-pomocnicy (pies węszy monety, sowa widzi w ciemności), nagroda dzienna, kody, ranking najszybszych rund, kosmetyki.
 - [ ] **Faza 5 — fabuła**: karteczki i rozmowy, czyli dlaczego Klucznik zmienia się o północy i jak złamać klątwę (zakończenie).

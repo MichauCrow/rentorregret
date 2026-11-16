@@ -32,5 +32,11 @@ Liczby do strojenia (czas rundy, czynsz, prędkości potworów, ceny) są w `src
 4. W folderze repozytorium uruchom `rojo serve`, a w pluginie kliknij **Connect**.
 5. Test w kilka osób: zakładka **Test → Clients and Servers** (np. 2 graczy).
 
+Dźwięki: w Studio, po 5 sekundach testu, okno Output pokaże raport `[Dźwięki]`, czyli które dźwięki się wczytują,
+a które nie mają jeszcze ID. ID dopisujesz w `src/shared/Config/AssetsConfig.luau`.
+
+Język: gra sama wybiera polski albo angielski (z konta Roblox). Można to zmienić w ⚙️ Ustawieniach.
+Nowy tekst w grze trzeba dopisać do `src/shared/Modules/Lang/Entries.luau`, a `lune run tests/test_lang` pokaże, czego brakuje.
+
 Komendy testowe (tylko w Studio, w konsoli klienta):
 `game.ReplicatedStorage.Shared.Remotes.DebugCommand:FireServer("coins")`. Inne komendy to `"midnight"`, `"rent"`, `"key"` i `"reset"`.

@@ -14,6 +14,9 @@ local SETTINGS = {
 	sound = function(value)
 		return RemoteService.IsInteger(value, 1, 3)
 	end,
+	lang = function(value)
+		return value == "auto" or value == "pl" or value == "en"
+	end,
 }
 
 -- Wartość ulepszenia na obecnym poziomie gracza (np. pojemność kieszeni)

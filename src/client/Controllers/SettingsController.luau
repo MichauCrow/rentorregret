@@ -7,9 +7,12 @@ local SettingsController = {}
 
 local C = UIKit.COLORS
 local SOUND_MODES = { "🔊 Wszystko", "🎵 Bez muzyki", "🔇 Cisza" }
+local LANG_ORDER = { "auto", "pl", "en" }
+local LANG_TEXT = { auto = "🌍 Język: automatycznie", pl = "🌍 Język: polski", en = "🌍 Language: English" }
 local panel = nil
 local scareButton = nil
 local soundButton = nil
+local langButton = nil
 
 local function render()
 	local profile = ClientState.profile
@@ -20,6 +23,7 @@ local function render()
 	scareButton.Text = if scares then "😱 Straszenie: WŁĄCZONE" else "😌 Straszenie: WYŁĄCZONE"
 	scareButton.BackgroundColor3 = if scares then C.option else C.button
 	soundButton.Text = SOUND_MODES[profile.settings.sound or 1] or SOUND_MODES[1]
+	langButton.Text = LANG_TEXT[profile.settings.lang or "auto"] or LANG_TEXT.auto
 end
 
 local function set(key: string, value: any)
@@ -38,7 +42,7 @@ end
 
 function SettingsController.Init()
 	local gui = UIKit.screenGui("Settings", 11)
-	panel = UIKit.panel("Settings", UDim2.fromOffset(480, 300), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5))
+	panel = UIKit.panel("Settings", UDim2.fromOffset(480, 375), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5))
 	UIKit.closeButton(panel, function()
 		panel.Visible = false
 	end)
@@ -60,6 +64,15 @@ function SettingsController.Init()
 		end
 	end)
 	soundButton.Parent = panel
+	langButton = UIKit.button("Language", "", C.option, { Size = UDim2.new(1, -60, 0, 60), Position = UDim2.fromOffset(30, 265), TextSize = 22 })
+	langButton.Activated:Connect(function()
+		local profile = ClientState.profile
+		if profile then
+			local current = table.find(LANG_ORDER, profile.settings.lang or "auto") or 1
+			set("lang", LANG_ORDER[current % #LANG_ORDER + 1])
+		end
+	end)
+	langButton.Parent = panel
 	panel.Parent = gui
 end
 

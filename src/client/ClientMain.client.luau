@@ -11,9 +11,11 @@ local ORDER = {
 	"MovementController",
 	"AmbienceController",
 	"HUDController",
+	"ObjectiveController",
 	"FxController",
 	"ShopController",
 	"SettingsController",
+	"LanguageController", -- na końcu: śledzi teksty wszystkich zbudowanych już okien
 }
 
 local modules = {}

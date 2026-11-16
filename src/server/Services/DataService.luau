@@ -22,7 +22,7 @@ local TEMPLATE = {
 	version = GameConfig.DATA_VERSION,
 	coins = GameConfig.STARTING_COINS,
 	upgrades = { flashlight = 1, shoes = 1, pockets = 1, stamina = 1 }, -- poziomy z ShopConfig
-	settings = { jumpscares = true, sound = 1 }, -- sound: 1 = wszystko, 2 = bez muzyki, 3 = cisza
+	settings = { jumpscares = true, sound = 1, lang = "auto" }, -- sound: 1 = wszystko, 2 = bez muzyki, 3 = cisza; lang: auto | pl | en
 	stats = {
 		rounds = 0,
 		rentsPaid = 0,
@@ -209,10 +209,10 @@ local function loadPlayer(player: Player)
 			warn("[DataService] Brak dostępu do DataStore. Dane działają tylko w tej sesji. Włącz: Game Settings > Security > Enable Studio Access to API Services")
 			profile = { data = newData(), saveable = false, busy = false, leaving = false, released = false }
 		elseif lastStatus == "locked" then
-			player:Kick("Twoje dane są jeszcze zapisywane na innym serwerze. Wejdź ponownie za minutę.")
+			player:Kick("Twoje dane są jeszcze zapisywane na innym serwerze. Wejdź ponownie za minutę. / Your data is still saving on another server. Please rejoin in a minute.")
 			return
 		else
-			player:Kick("Nie udało się wczytać Twoich danych. Spróbuj ponownie za chwilę.")
+			player:Kick("Nie udało się wczytać Twoich danych. Spróbuj ponownie za chwilę. / Could not load your data. Please try again shortly.")
 			return
 		end
 	end
