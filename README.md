@@ -27,7 +27,14 @@ Plan rozwoju i zasady gry: [docs/PLAN.md](docs/PLAN.md).
 Cały świat (hol, kamienica, potwory) jest budowany z kodu, więc Rojo synchronizuje całą grę.
 Liczby do strojenia (czas rundy, czynsz, prędkości potworów, ceny) są w `src/shared/Config`.
 
-## Praca z Roblox Studio
+## Najprościej: gotowy plik gry
+`place/RentOrRegret_Polnoc.rbxl` to gotowa gra z całym kodem z `src/`. Otwórz go w Roblox Studio
+(dwuklik albo **Plik → Otwórz z pliku**) i naciśnij **Test → Graj**. Żeby wgrać go do swojej gry na Robloxie:
+**Plik → Opublikuj jako** i wybierz „Rent or Regret”.
+
+Po każdej zmianie w kodzie plik buduje się od nowa poleceniem `lune run tools/build_place`.
+
+## Praca z Roblox Studio przez Rojo (synchronizacja na żywo)
 1. Zainstaluj [Rokit](https://github.com/rojo-rbx/rokit), potem w folderze repozytorium uruchom `rokit install`.
 2. W Studio zainstaluj plugin **Rojo**.
 3. Otwórz grę w Studio (albo `place/RentOrRegret.rbxl`).
